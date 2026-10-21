@@ -1,0 +1,10 @@
+node_modules
+build
+.svelte-kit
+package-lock.json
+test/fixtures
+/build-single
+/test-results
+/playwright-report
+.cache
+/coverage
