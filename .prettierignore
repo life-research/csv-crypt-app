@@ -8,3 +8,6 @@ test/fixtures
 /playwright-report
 .cache
 /coverage
+/build-desktop
+/src-tauri/target
+/src-tauri/gen

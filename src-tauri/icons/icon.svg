@@ -1,0 +1,14 @@
+<!-- Placeholder app icon. Replace with the team's design. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="64" y="64" width="896" height="896" rx="160" fill="#1e3a8a"/>
+  <g fill="none" stroke="#bfdbfe" stroke-width="36">
+    <rect x="176" y="208" width="672" height="480" rx="32"/>
+    <line x1="176" y1="368" x2="848" y2="368"/>
+    <line x1="176" y1="528" x2="848" y2="528"/>
+    <line x1="400" y1="208" x2="400" y2="688"/>
+  </g>
+  <path d="M600 600 v-56 a72 72 0 0 1 144 0 v56" fill="none" stroke="#fbbf24" stroke-width="40"/>
+  <rect x="560" y="600" width="224" height="192" rx="28" fill="#fbbf24"/>
+  <circle cx="672" cy="680" r="26" fill="#1e3a8a"/>
+  <rect x="660" y="690" width="24" height="56" rx="8" fill="#1e3a8a"/>
+</svg>

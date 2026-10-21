@@ -10,16 +10,50 @@ the computer. A Content Security Policy blocks all network requests.
 
 ## Builds
 
-| Build | Command                | Output                        | Use                         |
-| ----- | ---------------------- | ----------------------------- | --------------------------- |
-| A     | `npm run build`        | `build/`                      | Static web app (nginx, K8s) |
-| B     | `npm run build:single` | `build-single/csv-crypt.html` | One file, opens via file:// |
+| Build | Command                 | Output                        | Use                         |
+| ----- | ----------------------- | ----------------------------- | --------------------------- |
+| A     | `npm run build`         | `build/`                      | Static web app (nginx, K8s) |
+| B     | `npm run build:single`  | `build-single/csv-crypt.html` | One file, opens via file:// |
+| C     | `npm run build:desktop` | `build-desktop/`              | Frontend of the desktop app |
 
 Build B also writes `csv-crypt.html.sha256`. Distribute the file only from
 one trusted place, together with its checksum.
 
 The browser needs a secure context: HTTPS for build A (or `localhost`),
 file:// for build B.
+
+## Desktop app (Tauri)
+
+`src-tauri/` wraps build C in a desktop app for Windows and macOS. The app
+has no file system access. It can only save files through the native
+"Save as" dialog (command `save_file` in `src-tauri/src/save.rs`).
+Tauri sets the same CSP as the web builds, plus the IPC to the Rust side
+(`test/tauri-config.test.ts` checks this).
+
+Prerequisites: [Rust](https://rustup.rs) and the
+[Tauri system packages](https://v2.tauri.app/start/prerequisites/).
+
+```sh
+npm run desktop:dev            # app window with hot reload (Linux/macOS/Windows)
+npm run desktop:build:windows  # NSIS installer, cross-compiled on Linux
+npm run desktop:build:macos    # .dmg, only on a Mac
+cd src-tauri && cargo test     # Rust unit tests
+```
+
+Cross-compile for Windows on Linux (Debian/Ubuntu):
+
+```sh
+sudo apt install clang lld llvm nsis
+rustup target add x86_64-pc-windows-msvc
+cargo install --locked cargo-xwin
+```
+
+Output: `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`.
+The installer installs per user (no admin rights). It needs WebView2,
+which Windows 10 and 11 include.
+
+The icon in `src-tauri/icons/` is a placeholder. To change it, run
+`npx tauri icon <1024px.png|svg>`.
 
 ## Development
 

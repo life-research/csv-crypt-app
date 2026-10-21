@@ -63,6 +63,8 @@ export default ts.config(
     ignores: [
       'build/',
       'build-single/',
+      'build-desktop/',
+      'src-tauri/target/',
       '.svelte-kit/',
       'dist/',
       'test-results/',
