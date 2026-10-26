@@ -94,3 +94,9 @@ npm run cross-check   # encrypt with this app, decrypt with the jar
   (German Excel "CSV (Trennzeichen-getrennt)"). The CLI reads it as UTF-8.
 - Decrypted output defaults to the Excel format (UTF-16LE, BOM, tab), like
   `--out-optimize-win`.
+
+## License
+
+Copyright © 2026 Leipzig Research Centre for Civilization Diseases (LIFE)
+
+Licensed under the [Apache License, Version 2.0](LICENSE).
