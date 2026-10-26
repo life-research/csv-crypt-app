@@ -121,6 +121,43 @@ jobs:
       - name: Run actionlint
         run: actionlint
 
+  # Replaces dependency-review while the repository is private, because
+  # dependency-review needs GitHub Advanced Security there. Once the
+  # repository is public, dependency-review and Dependabot alerts take over.
+  audit:
+    if: ${{ github.event.repository.private }}
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Audit npm dependencies
+        run: npm audit
+
+      - name: Install cargo-audit
+        env:
+          # Check the cargo-audit binary against a pinned checksum here, it must be updated accordingly
+          # renovate: datasource=github-release-attachments depName=rustsec/rustsec versioning=regex:^cargo-audit/v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
+          CARGO_AUDIT_VERSION: v0.22.2
+          CARGO_AUDIT_CHECKSUM: 7fb9497f8594b389e5fce5ef9b92db08432996895b2e0c5a0167a69ed445c428
+        run: .github/scripts/install-cargo-audit.sh
+
+      - name: Audit Cargo dependencies
+        working-directory: src-tauri
+        run: cargo-audit audit
+
   # The jobs below need GitHub Advanced Security on private repositories.
   # They start once the repository is public (planned for version 1.0).
 
