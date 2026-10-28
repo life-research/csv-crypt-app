@@ -93,13 +93,9 @@ jobs:
       # No frontend build: only `tauri build` sets the custom-protocol feature
       # that embeds build-desktop/. Without it, cargo builds the dev mode.
       - name: Install cargo-llvm-cov
-        working-directory: .
-        env:
-          # Check the cargo-llvm-cov binary against a pinned checksum here, it must be updated accordingly
-          # renovate: datasource=github-release-attachments depName=taiki-e/cargo-llvm-cov
-          CARGO_LLVM_COV_VERSION: v0.9.1
-          CARGO_LLVM_COV_CHECKSUM: 3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522
-        run: .github/scripts/install-cargo-llvm-cov.sh
+        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-llvm-cov@0.9.1
 
       # Blocks a drop in coverage while Codecov is not set up (until 1.0).
       # Keep the limit just below the current value.
