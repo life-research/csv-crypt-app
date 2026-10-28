@@ -52,6 +52,26 @@ Output: `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`.
 The installer installs per user (no admin rights). It needs WebView2,
 which Windows 10 and 11 include.
 
+### Official Windows build
+
+The official Windows build is one standalone executable, without installer.
+CI builds it on a GitHub-hosted Windows runner for each tag `vX.Y.Z`
+(workflow `build-windows.yml`). Before CI accepts the executable, it checks:
+
+- The tag, `package.json` and `src-tauri/Cargo.toml` have the same version
+  (`node scripts/check-version.js vX.Y.Z`).
+- The executable's metadata has this version, the product name, the
+  publisher and the copyright from `src-tauri/tauri.conf.json`.
+- The executable needs no Visual C++ runtime and no WebView2 loader DLL.
+  It uses the Universal C runtime, which is part of Windows 10 and later.
+- The app starts and opens its window.
+
+The workflow run keeps `csv-crypt-X.Y.Z-windows-x64.exe` and its `.sha256`
+file as an artifact.
+
+The executable needs the WebView2 runtime. Windows 11 and up-to-date
+Windows 10 include it. Without it, the app does not start.
+
 The icon in `src-tauri/icons/` is a placeholder. To change it, run
 `npx tauri icon <1024px.png|svg>`.
 

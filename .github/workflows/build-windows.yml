@@ -1,0 +1,94 @@
+name: Windows Executable
+
+on:
+  push:
+    tags: ['v*.*.*']
+  # Catches a broken Windows build before the release.
+  pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/check-version.js'
+      - '.github/scripts/verify-windows-exe.ps1'
+      - '.github/workflows/build-windows.yml'
+
+# Declare default permissions as read only.
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-2025
+    env:
+      # The npm scripts set variables in POSIX syntax (BUILD_TARGET=desktop).
+      # Without this, npm runs them in cmd.exe.
+      NPM_CONFIG_SCRIPT_SHELL: C:\Program Files\Git\bin\bash.exe
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # On a tag, the tag must match too. On a pull request, there is no tag.
+      - name: Check versions
+        id: version
+        shell: bash
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          version="$(node scripts/check-version.js "${TAG}")"
+          echo "version=${version}" >>"${GITHUB_OUTPUT}"
+
+      - name: Set up Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only the executable, no installer.
+      - name: Build executable
+        run: npx tauri build --no-bundle -- --locked
+
+      - name: Verify executable
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .github/scripts/verify-windows-exe.ps1 -Path src-tauri/target/release/csv-crypt.exe -Version $env:VERSION
+
+      - name: Name executable and write checksum
+        id: artifact
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $name = "csv-crypt-$env:VERSION-windows-x64"
+          $exe = "$name.exe"
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item src-tauri/target/release/csv-crypt.exe "dist/$exe"
+          $hash = (Get-FileHash "dist/$exe" -Algorithm SHA256).Hash.ToLower()
+          # LF line ending, so that `sha256sum -c` also works on Linux.
+          [IO.File]::WriteAllText("$PWD/dist/$exe.sha256", "$hash  $exe`n")
+          Write-Host "$exe SHA-256: $hash"
+          "name=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Upload executable
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: dist/
+          if-no-files-found: error

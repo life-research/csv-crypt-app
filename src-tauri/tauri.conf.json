@@ -39,6 +39,8 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "Leipzig Research Centre for Civilization Diseases (LIFE)",
+    "copyright": "Copyright © 2026 Leipzig Research Centre for Civilization Diseases (LIFE)",
     "targets": ["nsis", "dmg"],
     "icon": [
       "icons/32x32.png",
