@@ -143,8 +143,10 @@ jobs:
         with:
           node-version: 22
 
+      # Low severity findings show in the log, but do not block. Dependabot
+      # alerts list them too.
       - name: Audit npm dependencies
-        run: npm audit
+        run: npm audit --audit-level=moderate
 
       - name: Install cargo-audit
         env:
