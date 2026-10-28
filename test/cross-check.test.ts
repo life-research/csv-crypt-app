@@ -9,40 +9,46 @@ import {encryptFile} from '../src/lib/files';
 import {readFixture, TEST_KEY} from '../src/lib/test-support';
 
 const jar = process.env.CSV_CRYPT_JAR;
+// Each test starts the JVM. The first, cold start took 7 s on a CI runner.
+const cliTimeout = 30_000;
 
-describe.skipIf(!jar)('CLI decrypts files from this app', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'csv-crypt-cross-'));
+describe.skipIf(!jar)(
+  'CLI decrypts files from this app',
+  {timeout: cliTimeout},
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), 'csv-crypt-cross-'));
 
-  it.each([
-    'example-comma-utf8.csv',
-    'excel-2013-unicode-text.txt',
-    'excel-2013-csv-german.csv',
-    'edge-cases.csv',
-  ])('%s', async (inputName) => {
-    const base = inputName.replace(/\.[^.]*$/, '');
-    const encrypted = await encryptFile(
-      readFixture(`input/${inputName}`),
-      TEST_KEY,
-      {
-        separator: 'auto',
-      },
-    );
-    const encryptedPath = join(dir, `${base}.crypt.csv`);
-    const decryptedPath = join(dir, `${base}.decrypt.csv`);
-    writeFileSync(encryptedPath, encrypted.output);
+    it.each([
+      'example-comma-utf8.csv',
+      'excel-2013-unicode-text.txt',
+      'excel-2013-csv-german.csv',
+      'edge-cases.csv',
+    ])('%s', async (inputName) => {
+      const base = inputName.replace(/\.[^.]*$/, '');
+      const encrypted = await encryptFile(
+        readFixture(`input/${inputName}`),
+        TEST_KEY,
+        {
+          separator: 'auto',
+        },
+      );
+      const encryptedPath = join(dir, `${base}.crypt.csv`);
+      const decryptedPath = join(dir, `${base}.decrypt.csv`);
+      writeFileSync(encryptedPath, encrypted.output);
 
-    execFileSync('java', [
-      '-jar',
-      jar!,
-      '-d',
-      '-k',
-      TEST_KEY,
-      encryptedPath,
-      decryptedPath,
-    ]);
+      execFileSync('java', [
+        '-jar',
+        jar!,
+        '-d',
+        '-k',
+        TEST_KEY,
+        encryptedPath,
+        decryptedPath,
+      ]);
 
-    expect(new Uint8Array(readFileSync(decryptedPath))).toEqual(
-      readFixture(`cli/${base}.decrypt-utf8.csv`),
-    );
-  });
-});
+      expect(new Uint8Array(readFileSync(decryptedPath))).toEqual(
+        readFixture(`cli/${base}.decrypt-utf8.csv`),
+      );
+    });
+  },
+);
