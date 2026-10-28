@@ -90,19 +90,8 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install stable --profile minimal --component llvm-tools-preview
 
-      # Tauri embeds the frontend at compile time (frontendDist in tauri.conf.json).
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Build frontend
-        working-directory: .
-        run: |
-          npm ci
-          npm run build:desktop
-
+      # No frontend build: only `tauri build` sets the custom-protocol feature
+      # that embeds build-desktop/. Without it, cargo builds the dev mode.
       - name: Install cargo-llvm-cov
         working-directory: .
         env:
