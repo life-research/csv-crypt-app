@@ -1,0 +1,23 @@
+coverage:
+  status:
+    # The overall coverage must not drop by more than 0.1 percentage points.
+    project:
+      default:
+        target: auto
+        threshold: '0.1'
+    # New and changed lines need at least 80 % coverage.
+    patch:
+      default:
+        target: 80%
+
+comment:
+  layout: 'reach, diff, flags, files'
+  behavior: default
+  require_changes: false
+
+codecov:
+  require_ci_to_pass: false
+  notify:
+    wait_for_ci: true
+    # One upload each from test-frontend and test-rust.
+    after_n_builds: 2

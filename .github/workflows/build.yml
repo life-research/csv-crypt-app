@@ -1,0 +1,138 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ['**']
+
+# Declare default permissions as read only.
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-26.04
+    env:
+      CSV_CRYPT_JAR: ${{ github.workspace }}/.cache/csv-crypt-standalone.jar
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # The cross-check tests decrypt files from this app with the original CLI.
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install csv-crypt CLI
+        env:
+          # Check the CLI release against a pinned checksum here, it must be updated accordingly
+          # renovate: datasource=github-releases depName=life-research/csv-crypt
+          CSV_CRYPT_VERSION: v0.5
+          CSV_CRYPT_CHECKSUM: de14ccc68ad2e28e442ee569e9f251c1fc1e07de7384f51a1ef3a53100524c30
+        run: .github/scripts/install-csv-crypt-cli.sh
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Fails below the thresholds in vite.config.ts.
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+
+  test-rust:
+    runs-on: ubuntu-26.04
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Tauri system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+
+      - name: Set up Rust
+        run: rustup toolchain install stable --profile minimal --component llvm-tools-preview
+
+      # No frontend build: only `tauri build` sets the custom-protocol feature
+      # that embeds build-desktop/. Without it, cargo builds the dev mode.
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-llvm-cov@0.9.1
+
+      # Blocks a drop in coverage while Codecov is not set up (until 1.0).
+      # Keep the limit just below the current value.
+      - name: Test with coverage
+        run: cargo llvm-cov --locked --lcov --output-path lcov.info --fail-under-lines 55
+
+      - name: Upload coverage to Codecov
+        if: ${{ !github.event.repository.private }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: src-tauri/lcov.info
+          flags: rust
+          fail_ci_if_error: true
+
+  e2e:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Uses the Google Chrome of the runner image (channel 'chrome').
+      - name: Run end-to-end tests
+        run: npm run test:e2e

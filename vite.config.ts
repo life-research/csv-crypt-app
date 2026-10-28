@@ -47,6 +47,16 @@ export default defineConfig(({command}) => ({
       provider: 'v8',
       include: ['src/lib/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/lib/i18n/*.ts'],
+      // lcov for Codecov, html for local reading.
+      reporter: ['text', 'html', 'lcov'],
+      // Blocks a drop in coverage while Codecov is not set up (until 1.0).
+      // Keep these just below the current values.
+      thresholds: {
+        statements: 92,
+        branches: 95,
+        functions: 94,
+        lines: 92,
+      },
     },
   },
 }));

@@ -48,9 +48,6 @@ jobs:
       - name: Check types
         run: npm run check
 
-      - name: Test
-        run: npm test
-
   rust:
     runs-on: ubuntu-26.04
     defaults:
@@ -75,27 +72,13 @@ jobs:
       - name: Set up Rust
         run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
 
-      # Tauri embeds the frontend at compile time (frontendDist in tauri.conf.json).
-      - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Build frontend
-        working-directory: .
-        run: |
-          npm ci
-          npm run build:desktop
-
+      # No frontend build: only `tauri build` sets the custom-protocol feature
+      # that embeds build-desktop/. Without it, cargo builds the dev mode.
       - name: Check formatting
         run: cargo fmt --check
 
       - name: Lint
         run: cargo clippy --all-targets --locked -- -D warnings
-
-      - name: Test
-        run: cargo test --locked
 
   actionlint:
     runs-on: ubuntu-26.04
