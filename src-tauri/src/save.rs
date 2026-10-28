@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 
 use percent_encoding::percent_decode_str;
 use serde::Serialize;
+use tauri::AppHandle;
 use tauri::http::HeaderMap;
 use tauri::ipc::{InvokeBody, Request};
-use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
 /// Must match `FILE_NAME_HEADER` in `src/lib/save.ts`.
@@ -37,7 +37,10 @@ pub async fn save_file(app: AppHandle, request: Request<'_>) -> Result<SaveResul
 async fn ask_save_path(app: AppHandle, suggested_name: String) -> Result<Option<PathBuf>, String> {
     // The blocking dialog must not run on the async runtime's threads.
     let selected = tauri::async_runtime::spawn_blocking(move || {
-        app.dialog().file().set_file_name(suggested_name).blocking_save_file()
+        app.dialog()
+            .file()
+            .set_file_name(suggested_name)
+            .blocking_save_file()
     })
     .await
     .map_err(|error| error.to_string())?;
@@ -95,7 +98,10 @@ mod tests {
     #[test]
     fn file_name_is_uri_decoded() {
         let headers = headers_with_name("M%C3%BCller%20Liste_crypt.csv");
-        assert_eq!(suggested_file_name(&headers), Ok("Müller Liste_crypt.csv".into()));
+        assert_eq!(
+            suggested_file_name(&headers),
+            Ok("Müller Liste_crypt.csv".into())
+        );
     }
 
     #[test]
@@ -116,7 +122,13 @@ mod tests {
 
     #[test]
     fn result_serializes_like_the_frontend_type() {
-        assert_eq!(serde_json::to_string(&SaveResult::Saved).unwrap(), "\"saved\"");
-        assert_eq!(serde_json::to_string(&SaveResult::Cancelled).unwrap(), "\"cancelled\"");
+        assert_eq!(
+            serde_json::to_string(&SaveResult::Saved).unwrap(),
+            "\"saved\""
+        );
+        assert_eq!(
+            serde_json::to_string(&SaveResult::Cancelled).unwrap(),
+            "\"cancelled\""
+        );
     }
 }
