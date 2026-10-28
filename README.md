@@ -71,7 +71,10 @@ also runs for pull requests that change the desktop app, and on the
 Actions page ("Run workflow") for any branch.
 
 The workflow run keeps `csv-crypt-X.Y.Z-windows-x64.exe` and its `.sha256`
-file as an artifact.
+file as an artifact. Only tag builds have this name. Builds of pull requests
+and manual starts are not official: their name contains the commit, for
+example `csv-crypt-X.Y.Z-dev.3f2a9c1-windows-x64.exe`. The release build
+uses no cache from earlier runs.
 
 The executable needs the WebView2 runtime. Windows 11 and up-to-date
 Windows 10 include it. Without it, the app does not start.

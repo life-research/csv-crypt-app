@@ -40,11 +40,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # No npm cache: the official executable must not use files from
+      # earlier runs (cache poisoning).
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-          cache: npm
 
       # On a tag, the tag must match too. On a pull request or a manual start
       # on a branch, there is no tag.
@@ -93,7 +94,13 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $name = "csv-crypt-$env:VERSION-windows-x64"
+          # Only a tag build has the plain name of an official release.
+          # Other builds name the commit they were built from.
+          $version = $env:VERSION
+          if ($env:GITHUB_REF_TYPE -ne 'tag') {
+            $version += "-dev.$(git rev-parse --short=7 HEAD)"
+          }
+          $name = "csv-crypt-$version-windows-x64"
           $exe = "$name.exe"
           New-Item -ItemType Directory -Path dist | Out-Null
           Copy-Item src-tauri/target/release/csv-crypt.exe "dist/$exe"
