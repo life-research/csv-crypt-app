@@ -2,6 +2,7 @@
   import {isValidHexKey} from '#lib/crypto/key.ts';
   import {
     decryptFile,
+    OUTPUT_TYPES,
     type FileResult,
     type OutputFormat,
     type SeparatorChoice,
@@ -13,6 +14,7 @@
     unexpectedErrorMessage,
   } from '#lib/messages.ts';
   import {outputFileName, saveFile} from '#lib/save.ts';
+  import {isExcelFileName} from '#lib/xlsx/kind.ts';
   import FilePicker from './FilePicker.svelte';
   import KeyInput from './KeyInput.svelte';
   import SeparatorSelect from './SeparatorSelect.svelte';
@@ -27,6 +29,7 @@
   let error = $state('');
   let saved = $state(false);
 
+  const isExcel = $derived(file !== null && isExcelFileName(file.name));
   const canStart = $derived(file !== null && !working && isValidHexKey(hexKey));
 
   function selectFile(selected: File) {
@@ -53,6 +56,7 @@
           i18n.t,
           decrypted.lineNumber,
           decrypted.error,
+          decrypted.sheet,
         );
       }
     } catch (caught) {
@@ -64,11 +68,13 @@
 
   async function save() {
     if (result && file) {
+      const {extension, mimeType} = OUTPUT_TYPES[result.input.kind];
       const name = outputFileName(
         file.name.replace(/_crypt(\.[^.]*)?$/, '$1'),
         'decrypt',
+        extension,
       );
-      saved = (await saveFile(result.output, name, 'text/csv')) === 'saved';
+      saved = (await saveFile(result.output, name, mimeType)) === 'saved';
     }
   }
 
@@ -94,37 +100,41 @@
     <KeyInput id="decrypt-key" bind:value={hexKey} oninput={clearResult} />
   </div>
 
-  <div>
-    <SeparatorSelect
-      id="decrypt-separator"
-      bind:value={separator}
-      onchange={clearResult}
-    />
-  </div>
+  {#if isExcel}
+    <p class="text-sm text-slate-600">{i18n.t('file.excelHint')}</p>
+  {:else}
+    <div>
+      <SeparatorSelect
+        id="decrypt-separator"
+        bind:value={separator}
+        onchange={clearResult}
+      />
+    </div>
 
-  <fieldset>
-    <legend class="text-sm font-medium text-slate-700"
-      >{i18n.t('decrypt.outputFormat')}</legend
-    >
-    <label class="mt-1 flex items-center gap-2 text-sm">
-      <input
-        type="radio"
-        value="excel"
-        bind:group={outputFormat}
-        onchange={clearResult}
-      />
-      {i18n.t('decrypt.formatExcel')}
-    </label>
-    <label class="mt-1 flex items-center gap-2 text-sm">
-      <input
-        type="radio"
-        value="utf8-comma"
-        bind:group={outputFormat}
-        onchange={clearResult}
-      />
-      {i18n.t('decrypt.formatUtf8')}
-    </label>
-  </fieldset>
+    <fieldset>
+      <legend class="text-sm font-medium text-slate-700"
+        >{i18n.t('decrypt.outputFormat')}</legend
+      >
+      <label class="mt-1 flex items-center gap-2 text-sm">
+        <input
+          type="radio"
+          value="excel"
+          bind:group={outputFormat}
+          onchange={clearResult}
+        />
+        {i18n.t('decrypt.formatExcel')}
+      </label>
+      <label class="mt-1 flex items-center gap-2 text-sm">
+        <input
+          type="radio"
+          value="utf8-comma"
+          bind:group={outputFormat}
+          onchange={clearResult}
+        />
+        {i18n.t('decrypt.formatUtf8')}
+      </label>
+    </fieldset>
+  {/if}
 
   <button
     type="button"

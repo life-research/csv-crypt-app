@@ -5,6 +5,10 @@ encrypts a CSV file line by line: column 1 stays readable, all other columns
 are encrypted into column 2. The file format is identical to the CLI
 (v0.5), so both tools can read each other's files.
 
+It also encrypts Excel files (`.xlsx`): the result is an `.xlsx` file with
+the same sheets, and decryption gives an `.xlsx` file again (see
+[Excel files](#excel-files)).
+
 All encryption runs in the browser (Web Crypto API). The data never leaves
 the computer. A Content Security Policy blocks all network requests.
 
@@ -144,6 +148,48 @@ npm run check        # svelte-check
 npm run lint
 npm run format:check
 ```
+
+## Excel files
+
+The app tells an `.xlsx` file from a CSV file by its first bytes (ZIP
+signature), not by its name. It processes all sheets of the file:
+
+- **Encrypt:** each sheet keeps its name. Column 1 stays readable, column 2
+  holds the other columns, encrypted. Each row has the same format as a
+  line of an encrypted CSV file, so a sheet exported as CSV decrypts with
+  the CLI (`test/cross-check.test.ts` checks this).
+- **Decrypt:** gives an `.xlsx` file with the same sheets.
+
+Each cell is encrypted as the value stored in the file, not as the text that
+Excel shows (`src/lib/xlsx/cells.ts`):
+
+| Cell in Excel               | Encrypted text                       |
+| --------------------------- | ------------------------------------ |
+| Text `00123`                | `00123`                              |
+| Number 1234,5               | `1234.5` (as stored)                 |
+| Date 15.03.2023 (with time) | `2023-03-15` (`2023-03-15T10:30:05`) |
+| WAHR / FALSCH               | `TRUE` / `FALSE`                     |
+| Formula                     | its calculated result                |
+| Error such as `#DIV/0!`     | the app stops with a message         |
+
+Decryption restores numbers, dates and booleans only for text in exactly
+this form. All other text stays text, for example `00123` or `1234,5`.
+
+Limits:
+
+- Formatting, formulas, merged cells, comments and charts are lost. Only
+  the values stay.
+- A number with a format such as `00000` loses its leading zeros: `123`
+  shows as `00123` in Excel, but the stored value is `123`. Store such IDs
+  as text.
+- Text that looks like a number becomes a number after decryption: a text
+  cell `123` gives the number 123.
+- Legacy `.xls` files (Excel 97–2003) are not supported. Save them as
+  `.xlsx` in Excel.
+
+The app reads and writes `.xlsx` files with `read-excel-file` and
+`write-excel-file`, both through their `universal` import, which starts no
+Web Worker (the CSP and `file://` would block it).
 
 ## Compatibility with the CLI
 

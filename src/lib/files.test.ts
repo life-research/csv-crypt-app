@@ -104,7 +104,7 @@ describe('encryptFile', () => {
   it('uses an explicit separator', async () => {
     const input = encodeUtf8('id;a,b\n');
     const result = await encryptFile(input, TEST_KEY, {separator: ','});
-    expect(result.input.separator).toBe(',');
+    expect(result.input).toMatchObject({kind: 'csv', separator: ','});
     const decrypted = expectOk(
       await decryptFile(result.output, TEST_KEY, {
         separator: ',',
@@ -118,7 +118,7 @@ describe('encryptFile', () => {
     const result = await encryptFile(encodeUtf8('a,1\nb,2\nc\n'), TEST_KEY, {
       separator: 'auto',
     });
-    expect(result.input.lineCount).toBe(3);
+    expect(result.input).toMatchObject({kind: 'csv', lineCount: 3});
   });
 
   it('rejects an invalid key', async () => {

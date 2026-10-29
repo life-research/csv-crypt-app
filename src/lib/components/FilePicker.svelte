@@ -52,7 +52,7 @@
   <input
     {id}
     type="file"
-    accept=".csv,.txt,text/csv,text/plain"
+    accept=".csv,.txt,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     class="sr-only"
     onchange={onChange}
   />
