@@ -1,5 +1,6 @@
 <script lang="ts">
   import {isValidHexKey} from '#lib/crypto/key.ts';
+  import {isExcelFileName} from '#lib/file-names.ts';
   import {
     decryptFile,
     OUTPUT_TYPES,
@@ -14,7 +15,6 @@
     unexpectedErrorMessage,
   } from '#lib/messages.ts';
   import {outputFileName, saveFile} from '#lib/save.ts';
-  import {isExcelFileName} from '#lib/xlsx/kind.ts';
   import FilePicker from './FilePicker.svelte';
   import KeyInput from './KeyInput.svelte';
   import SeparatorSelect from './SeparatorSelect.svelte';

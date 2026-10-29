@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {encodeUtf8} from '../csv/encoding';
-import {detectInputKind, isExcelFileName} from './kind';
+import {detectInputKind} from './kind';
 
 describe('detectInputKind', () => {
   it('detects an .xlsx file by its ZIP signature', () => {
@@ -24,15 +24,5 @@ describe('detectInputKind', () => {
 
   it('treats text that starts with "PK" but no ZIP signature as text', () => {
     expect(detectInputKind(encodeUtf8('PK,Name\n'))).toBe('text');
-  });
-});
-
-describe('isExcelFileName', () => {
-  it.each(['Studie.xlsx', 'STUDIE.XLSX', 'a.b.xlsx'])('accepts %s', (name) => {
-    expect(isExcelFileName(name)).toBe(true);
-  });
-
-  it.each(['Studie.csv', 'Studie.xls', 'xlsx.txt'])('rejects %s', (name) => {
-    expect(isExcelFileName(name)).toBe(false);
   });
 });

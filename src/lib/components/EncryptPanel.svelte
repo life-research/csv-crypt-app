@@ -1,5 +1,6 @@
 <script lang="ts">
   import {generateHexKey, isValidHexKey} from '#lib/crypto/key.ts';
+  import {isExcelFileName} from '#lib/file-names.ts';
   import {
     encryptFile,
     OUTPUT_TYPES,
@@ -9,7 +10,6 @@
   import {i18n} from '#lib/i18n/i18n.svelte.ts';
   import {inputSummary, unexpectedErrorMessage} from '#lib/messages.ts';
   import {outputFileName, saveFile} from '#lib/save.ts';
-  import {isExcelFileName} from '#lib/xlsx/kind.ts';
   import FilePicker from './FilePicker.svelte';
   import KeyDisplay from './KeyDisplay.svelte';
   import KeyInput from './KeyInput.svelte';

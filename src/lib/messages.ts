@@ -1,6 +1,7 @@
 import {CsvParseError, type Separator} from './csv/csv';
 import type {InputEncoding} from './csv/encoding';
 import type {DecryptErrorCode} from './crypto/line';
+import {checkFileName, SUPPORTED_EXTENSIONS} from './file-names';
 import type {InputInfo} from './files';
 import type {MessageKey, Params} from './i18n/i18n';
 import {XlsNotSupportedError} from './xlsx/kind';
@@ -19,6 +20,20 @@ export function decryptErrorMessage(
   return sheet === undefined
     ? t('error.line', {line: lineNumber, message})
     : t('error.sheetLine', {sheet, line: lineNumber, message});
+}
+
+/** Why the app does not take a selected file, or `null` if it does. */
+export function rejectedFileMessage(t: Translate, name: string): string | null {
+  switch (checkFileName(name)) {
+    case 'supported':
+      return null;
+    case 'xls':
+      return t('error.xlsFile');
+    case 'unsupported': {
+      const extensions = SUPPORTED_EXTENSIONS.map((ext) => `.${ext}`);
+      return t('file.unsupported', {name, extensions: extensions.join(', ')});
+    }
+  }
 }
 
 export function unexpectedErrorMessage(t: Translate, error: unknown): string {

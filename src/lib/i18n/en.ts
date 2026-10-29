@@ -15,6 +15,8 @@ export const en: Messages = {
   'file.drop': 'Drop a file here or click to select one',
   'file.selected': 'Selected: {name}',
   'file.change': 'Select another file',
+  'file.unsupported':
+    'The app cannot process the file “{name}”. Allowed are CSV and Excel files ({extensions}).',
   'file.excelHint':
     'Excel file: all sheets are processed. Only the values stay; formatting and formulas are lost.',
 

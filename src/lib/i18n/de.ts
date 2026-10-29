@@ -13,6 +13,8 @@ export const de = {
   'file.drop': 'Datei hierher ziehen oder klicken zum Auswählen',
   'file.selected': 'Ausgewählt: {name}',
   'file.change': 'Andere Datei wählen',
+  'file.unsupported':
+    'Die App kann die Datei „{name}“ nicht verarbeiten. Erlaubt sind CSV- und Excel-Dateien ({extensions}).',
   'file.excelHint':
     'Excel-Datei: Die App verarbeitet alle Blätter. Nur die Werte bleiben erhalten, Formatierung und Formeln gehen verloren.',
 

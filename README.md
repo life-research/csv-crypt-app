@@ -9,6 +9,10 @@ It also encrypts Excel files (`.xlsx`): the result is an `.xlsx` file with
 the same sheets, and decryption gives an `.xlsx` file again (see
 [Excel files](#excel-files)).
 
+The app takes only files with the extension `.csv`, `.txt` (Excel's
+"Unicode Text") or `.xlsx`. For other files, it shows a warning and keeps
+the previous selection (`src/lib/file-names.ts`).
+
 All encryption runs in the browser (Web Crypto API). The data never leaves
 the computer. A Content Security Policy blocks all network requests.
 

@@ -5,6 +5,7 @@ import {format, type MessageKey, type Params} from './i18n/i18n';
 import {
   decryptErrorMessage,
   inputSummary,
+  rejectedFileMessage,
   unexpectedErrorMessage,
 } from './messages';
 import {XlsNotSupportedError} from './xlsx/kind';
@@ -35,6 +36,22 @@ describe('messages', () => {
     expect(
       unexpectedErrorMessage(t, new ExcelCellError('Labor', 'C7')),
     ).toContain('Die Zelle C7 im Blatt „Labor“');
+  });
+
+  it('takes CSV, text and Excel files', () => {
+    expect(rejectedFileMessage(t, 'Liste.csv')).toBeNull();
+    expect(rejectedFileMessage(t, 'Liste.txt')).toBeNull();
+    expect(rejectedFileMessage(t, 'Studie.xlsx')).toBeNull();
+  });
+
+  it('rejects other files with the allowed extensions', () => {
+    expect(rejectedFileMessage(t, 'Bericht.pdf')).toBe(
+      'Die App kann die Datei „Bericht.pdf“ nicht verarbeiten. Erlaubt sind CSV- und Excel-Dateien (.csv, .txt, .xlsx).',
+    );
+  });
+
+  it('rejects a legacy .xls file with a hint to save it as .xlsx', () => {
+    expect(rejectedFileMessage(t, 'Studie.xls')).toContain('als .xlsx');
   });
 
   it('describes an unclosed quote', () => {

@@ -27,8 +27,3 @@ export function detectInputKind(bytes: Uint8Array): InputKind {
   }
   return 'text';
 }
-
-/** Only for the user interface, before the file is read. */
-export function isExcelFileName(name: string): boolean {
-  return /\.xlsx$/i.test(name);
-}
