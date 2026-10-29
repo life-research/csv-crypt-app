@@ -37,6 +37,17 @@ describe('tauri.conf.json', () => {
   it('does not expose the Tauri API as a global', () => {
     expect(config.app.withGlobalTauri).toBe(false);
   });
+
+  // The executable's metadata comes from here; code signing needs it.
+  it('takes its version from package.json', () => {
+    expect(config.version).toBe('../package.json');
+  });
+
+  it('sets the product metadata of the executable', () => {
+    expect(config.productName).toBe('CSV Crypt');
+    expect(config.bundle.publisher).toMatch(/\S/);
+    expect(config.bundle.copyright).toContain(config.bundle.publisher);
+  });
 });
 
 describe('default capability', () => {
