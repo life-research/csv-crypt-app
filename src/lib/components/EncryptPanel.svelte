@@ -83,9 +83,10 @@
 <div class="space-y-5">
   <FilePicker id="encrypt-file" {file} onselect={selectFile} />
 
+  <!-- The separator and the output format apply only to CSV and text files. -->
   {#if isExcel}
     <p class="text-sm text-slate-600">{i18n.t('file.excelHint')}</p>
-  {:else}
+  {:else if file}
     <div>
       <SeparatorSelect
         id="encrypt-separator"

@@ -176,6 +176,19 @@ test('encrypts and decrypts an Excel file with all sheets', async ({
   );
 });
 
+test('shows the CSV options only for a CSV file', async ({page}) => {
+  await expect(page.locator('#encrypt-separator')).toHaveCount(0);
+  await page.locator('#encrypt-file').setInputFiles(CLEAR_FILE);
+  await expect(page.locator('#encrypt-separator')).toBeVisible();
+
+  await page.getByRole('tab', {name: 'Entschlüsseln'}).click();
+  await expect(page.locator('#decrypt-separator')).toHaveCount(0);
+  await expect(page.getByText('Format der Ausgabedatei')).toHaveCount(0);
+  await page.locator('#decrypt-file').setInputFiles(CLEAR_FILE);
+  await expect(page.locator('#decrypt-separator')).toBeVisible();
+  await expect(page.getByText('Format der Ausgabedatei')).toBeVisible();
+});
+
 test('rejects a file that is neither CSV nor Excel', async ({
   page,
 }, testInfo) => {
