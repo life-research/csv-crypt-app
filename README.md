@@ -100,6 +100,10 @@ The icon in `src-tauri/icons/` is a placeholder. To change it, run
 
 ## Development
 
+Prerequisites: Node 24 (at least 24.15.0) with npm 11, the same as in CI.
+`package.json` enforces this (`engines`, with `engine-strict` in `.npmrc`):
+npm 10 writes a different `package-lock.json`, and `npm ci` in CI then fails.
+
 ```sh
 npm install
 npm run dev          # http://localhost:5173
