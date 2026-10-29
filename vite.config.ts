@@ -4,6 +4,7 @@ import {vitePreprocess} from '@sveltejs/vite-plugin-svelte';
 import adapter from '@sveltejs/adapter-static';
 import {defineConfig} from 'vitest/config';
 import tailwindcss from '@tailwindcss/vite';
+import sbom from 'rollup-plugin-sbom';
 import {cspDirectives} from './csp.config.ts';
 
 const {version} = JSON.parse(readFileSync('package.json', 'utf8'));
@@ -39,6 +40,9 @@ export default defineConfig(({command}) => ({
       csp: command === 'build' && !desktop ? csp : undefined,
     }),
     tailwindcss(),
+    // Lists the npm packages in the bundle of the desktop app, for the SBOM
+    // of the executable (see build-windows.yml).
+    desktop && sbom({specVersion: '1.6', includeWellKnown: false}),
   ],
   test: {
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],

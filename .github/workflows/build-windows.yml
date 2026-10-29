@@ -10,6 +10,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/check-version.js'
+      - 'scripts/check-sbom.js'
+      - 'vite.config.ts'
       - '.github/scripts/verify-windows-exe.ps1'
       - '.github/workflows/build-windows.yml'
   # Manual start for any branch ("Run workflow" on the Actions page).
@@ -109,6 +111,34 @@ jobs:
           [IO.File]::WriteAllText("$PWD/dist/$exe.sha256", "$hash  $exe`n")
           Write-Host "$exe SHA-256: $hash"
           "name=$name" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install SBOM tools
+        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-cyclonedx@0.5.9,cyclonedx@0.33.1
+
+      # One CycloneDX SBOM for the executable: the npm packages in the bundle
+      # (rollup-plugin-sbom writes them during the build) and the Cargo crates
+      # for Windows, without build-time dependencies.
+      - name: Create SBOM
+        shell: pwsh
+        env:
+          NAME: ${{ steps.artifact.outputs.name }}
+          VERSION: ${{ steps.artifact.outputs.version }}
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo cyclonedx --manifest-path src-tauri/Cargo.toml --format json `
+            --spec-version 1.5 --target x86_64-pc-windows-msvc --no-build-deps `
+            --override-filename sbom-cargo
+          $productName = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).productName
+          $sbom = "dist/$env:NAME.cdx.json"
+          cyclonedx merge `
+            --input-files build-desktop/cyclonedx/bom.json src-tauri/sbom-cargo.json `
+            --output-file $sbom --output-format json --output-version v1_6 `
+            --name $productName --version $env:VERSION
+          cyclonedx validate --input-file $sbom --input-version v1_6 --fail-on-errors
+          node scripts/check-sbom.js $sbom $env:VERSION
 
       - name: Upload executable
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
