@@ -1,0 +1,69 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "customManagers": [
+    {
+      "description": "Versions and checksums of tools that CI downloads (# renovate: comments)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+\\w+_VERSION: (?<currentValue>\\S+)(?:\\s+\\w+_CHECKSUM: (?<currentDigest>[0-9a-f]{64}))?"
+      ]
+    },
+    {
+      "description": "Cargo tools installed by taiki-e/install-action (tool: name@version)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "(?<depName>cargo-[\\w-]+)@(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "crate"
+    },
+    {
+      "description": "CycloneDX CLI installed by taiki-e/install-action",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": ["[ ,]cyclonedx@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "CycloneDX/cyclonedx-cli",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "One PR for all non-major npm updates",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "npm dependencies (non-major)"
+    },
+    {
+      "description": "One PR for all non-major Cargo updates",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "Cargo dependencies (non-major)"
+    },
+    {
+      "description": "Cargo.lock pins the exact versions, so keep the ranges in Cargo.toml",
+      "matchManagers": ["cargo"],
+      "rangeStrategy": "update-lockfile"
+    },
+    {
+      "description": "One PR for all CI updates: actions, runners and downloaded tools",
+      "matchManagers": ["github-actions", "custom.regex"],
+      "matchFileNames": [".github/workflows/**"],
+      "groupName": "CI"
+    },
+    {
+      "description": "slsa-verifier checks the tag of the generator, so it must not be pinned to a digest",
+      "matchDepNames": ["slsa-framework/slsa-github-generator"],
+      "pinDigests": false
+    }
+  ]
+}
