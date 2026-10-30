@@ -76,6 +76,22 @@ and manual starts are not official: their name contains the commit, for
 example `csv-crypt-X.Y.Z-dev.3f2a9c1-windows-x64.exe`. The release build
 uses no cache from earlier runs.
 
+### SBOM
+
+The artifact also contains `csv-crypt-X.Y.Z-windows-x64.cdx.json`, a
+CycloneDX 1.6 SBOM of the executable. It lists only what the executable
+contains:
+
+- npm: the packages in the bundle of build C. `rollup-plugin-sbom` records
+  them during `npm run build:desktop` (`build-desktop/cyclonedx/bom.json`).
+  Build tools such as ESLint or Vitest are not in it.
+- Cargo: the crates for `x86_64-pc-windows-msvc`, without build-time
+  dependencies (`cargo cyclonedx --no-build-deps`). Crates for other
+  platforms are not in it.
+
+CI merges both parts with `cyclonedx merge`, validates the result and checks
+it with `node scripts/check-sbom.js <file> <version>`.
+
 The executable needs the WebView2 runtime. Windows 11 and up-to-date
 Windows 10 include it. Without it, the app does not start.
 
@@ -83,6 +99,10 @@ The icon in `src-tauri/icons/` is a placeholder. To change it, run
 `npx tauri icon <1024px.png|svg>`.
 
 ## Development
+
+Prerequisites: Node 24 (at least 24.15.0) with npm 11, the same as in CI.
+`package.json` enforces this (`engines`, with `engine-strict` in `.npmrc`):
+npm 10 writes a different `package-lock.json`, and `npm ci` in CI then fails.
 
 ```sh
 npm install
