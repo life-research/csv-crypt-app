@@ -5,19 +5,10 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
-  # Catches a broken Windows build before the release.
+  # Catches a broken Windows build before the release. Runs for every pull
+  # request: the build is a required check, and a check that does not start
+  # blocks the merge.
   pull_request:
-    paths:
-      - 'src-tauri/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'rust-toolchain.toml'
-      - '.node-version'
-      - 'scripts/check-version.js'
-      - 'scripts/check-sbom.js'
-      - 'vite.config.ts'
-      - '.github/scripts/verify-windows-exe.ps1'
-      - '.github/workflows/build-windows.yml'
   # Manual start for any branch ("Run workflow" on the Actions page).
   workflow_dispatch:
 
@@ -66,6 +57,16 @@ jobs:
         run: |
           version="$(node scripts/check-version.js "${TAG}")"
           echo "version=${version}" >>"${GITHUB_OUTPUT}"
+
+      # Only reviewed commits become a release. Before the build, so that a
+      # wrong tag fails at once.
+      - name: Check that the tag is on the default branch
+        if: ${{ github.ref_type == 'tag' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: node scripts/check-tag-on-main.js "${GITHUB_SHA}" "${BRANCH}"
 
       - name: Set up Rust
         run: rustup toolchain install
