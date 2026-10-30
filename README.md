@@ -92,6 +92,37 @@ contains:
 CI merges both parts with `cyclonedx merge`, validates the result and checks
 it with `node scripts/check-sbom.js <file> <version>`.
 
+### Releases
+
+1. Set the new version in `package.json` and `src-tauri/Cargo.toml`.
+2. Push a tag `vX.Y.Z`. The workflow `Release` builds and checks the
+   executable and creates a **draft** GitHub release with:
+   - `csv-crypt-X.Y.Z-windows-x64.exe`
+   - `csv-crypt-X.Y.Z-windows-x64.exe.sha256`
+   - `csv-crypt-X.Y.Z-windows-x64.exe.intoto.jsonl` (SLSA provenance)
+   - `csv-crypt-X.Y.Z-windows-x64.cdx.json` (SBOM)
+3. A maintainer reviews the draft, edits the generated release notes and
+   publishes it by hand.
+
+While the repository is private, the release has no provenance: Sigstore
+writes each signature to the public Rekor log, which would make the names
+of the repository public.
+
+To verify a downloaded executable:
+
+```sh
+sha256sum -c csv-crypt-X.Y.Z-windows-x64.exe.sha256
+slsa-verifier verify-artifact csv-crypt-X.Y.Z-windows-x64.exe \
+  --provenance-path csv-crypt-X.Y.Z-windows-x64.exe.intoto.jsonl \
+  --source-uri github.com/life-research/csv-crypt-app \
+  --source-tag vX.Y.Z
+```
+
+[slsa-verifier](https://github.com/slsa-framework/slsa-verifier) checks
+that the executable was built by this repository's workflow from the tag.
+The provenance does not replace Windows code signing: Windows still shows
+the SmartScreen warning.
+
 The executable needs the WebView2 runtime. Windows 11 and up-to-date
 Windows 10 include it. Without it, the app does not start.
 
