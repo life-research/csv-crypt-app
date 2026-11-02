@@ -13,6 +13,63 @@ not processed, also when they have a `.csv` name.
 All encryption runs in the browser (Web Crypto API). The data never leaves
 the computer. A Content Security Policy blocks all network requests.
 
+## Install
+
+Download the executable of the application for your OS (At the moment, there is only a version for Windows:)
+
+- [Windows](https://github.com/life-research/csv-crypt-app/releases/latest)
+
+The executable needs no installation. Save it and start it with a double
+click.
+
+### Windows SmartScreen
+
+The executable has no code signature yet. Because of this, Windows can show
+the warning "Windows protected your PC" when you start it for the first
+time. To start the app:
+
+1. Click **More info** (German: **Weitere Informationen**).
+2. Click **Run anyway** (German: **Trotzdem ausführen**).
+
+<p align="center">
+  <img src="docs/images/smartscreen-warning.jpg"
+       alt="Windows SmartScreen: &quot;Windows protected your PC&quot;"
+       width="600">
+</p>
+
+## Usage
+
+### Encrypt a file
+
+1. In the tab **Encrypt**, select the file. Drop it on the field or click
+   the field.
+2. Click **Encrypt**.
+3. Click **Save encrypted file** and save the file on your computer.
+4. Save the key: click **Save as file** or **Copy**.
+
+Send the key on a different channel than the file, never together with it.
+Without the key, nobody can decrypt the file.
+
+<p align="center">
+  <img src="docs/images/encrypt-steps.jpg"
+       alt="Windows SmartScreen: &quot;Windows protected your PC&quot;"
+       width="400">
+</p>
+
+### Decrypt a file
+
+1. In the tab **Decrypt**, select the encrypted file.
+2. Enter the key (64 characters).
+3. Select the format of the output file: **For Excel** or **Standard CSV**.
+4. Click **Decrypt**.
+5. Click **Save decrypted file** and save the file on your computer.
+
+<p align="center">
+  <img src="docs/images/decrypt-steps.jpg"
+       alt="Windows SmartScreen: &quot;Windows protected your PC&quot;"
+       width="400">
+</p>
+
 ## File size
 
 The app encrypts CSV files up to 200 MB and decrypts files up to 500 MB.
