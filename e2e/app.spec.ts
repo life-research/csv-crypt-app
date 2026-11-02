@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {expect, test, type Page} from '@playwright/test';
+import {decrypt, encrypt} from './support/steps';
 
 const FIXTURES = resolve('test/fixtures');
 const CLEAR_FILE = resolve(FIXTURES, 'input/example-comma-utf8.csv');
@@ -17,59 +18,52 @@ test.beforeEach(async ({page, baseURL}) => {
   await page.goto(baseURL!);
 });
 
-async function saveDownload(page: Page, buttonName: string): Promise<string> {
+/**
+ * Keeps the file name that the app suggests: the app takes only files with
+ * a known extension, and Playwright's own download path has none.
+ */
+async function saveDownload(
+  page: Page,
+  buttonName: string,
+  directory: string,
+): Promise<string> {
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', {name: buttonName}).click();
   const download = await downloadPromise;
-  // Keeps the suggested name: the app accepts only .csv and .txt files.
-  const path = test.info().outputPath(download.suggestedFilename());
+  const path = resolve(directory, download.suggestedFilename());
   await download.saveAs(path);
   return path;
 }
 
-async function encrypt(
-  page: Page,
-): Promise<{key: string; encryptedPath: string}> {
-  await page.locator('#encrypt-file').setInputFiles(CLEAR_FILE);
-  await page
-    .getByRole('button', {name: 'Verschlüsseln', exact: true})
-    .last()
-    .click();
-  await expect(page.getByText('Die Datei ist verschlüsselt.')).toBeVisible();
-  const key = (await page
-    .locator('.font-mono.select-all')
-    .textContent())!.trim();
-  const encryptedPath = await saveDownload(
-    page,
-    'Verschlüsselte Datei speichern',
-  );
-  return {key, encryptedPath};
+function encryptClearFile(page: Page, directory: string) {
+  return encrypt(page, CLEAR_FILE, saveDownload, directory);
 }
 
-test('encrypts and decrypts a file in the browser', async ({page}) => {
-  const {key, encryptedPath} = await encrypt(page);
+test('encrypts and decrypts a file in the browser', async ({
+  page,
+}, testInfo) => {
+  const {key, encryptedPath} = await encryptClearFile(
+    page,
+    testInfo.outputPath(),
+  );
   expect(key).toMatch(/^[0-9a-f]{64}$/);
   expect(readFileSync(encryptedPath, 'utf8')).not.toContain(CLEAR_TEXT_SAMPLE);
 
-  await page.getByRole('tab', {name: 'Entschlüsseln'}).click();
-  await page.locator('#decrypt-file').setInputFiles(encryptedPath);
-  await page.locator('#decrypt-key').fill(key);
-  await page.getByLabel('Standard-CSV (UTF-8, Komma)').check();
-  await page
-    .getByRole('button', {name: 'Entschlüsseln', exact: true})
-    .last()
-    .click();
-  await expect(page.getByText('Die Datei ist entschlüsselt.')).toBeVisible();
-  const decryptedPath = await saveDownload(
+  const decryptedPath = await decrypt(
     page,
-    'Entschlüsselte Datei speichern',
+    encryptedPath,
+    key,
+    saveDownload,
+    testInfo.outputPath(),
+    'Standard-CSV (UTF-8, Komma)',
   );
 
+  expect(decryptedPath).toMatch(/example-comma-utf8_decrypt\.csv$/);
   expect(readFileSync(decryptedPath)).toEqual(EXPECTED_DECRYPTED);
 });
 
-test('reports a wrong key with the line number', async ({page}) => {
-  const {encryptedPath} = await encrypt(page);
+test('reports a wrong key with the line number', async ({page}, testInfo) => {
+  const {encryptedPath} = await encryptClearFile(page, testInfo.outputPath());
   await page.getByRole('tab', {name: 'Entschlüsseln'}).click();
   await page.locator('#decrypt-file').setInputFiles(encryptedPath);
   await page.locator('#decrypt-key').fill('00'.repeat(32));
@@ -80,8 +74,10 @@ test('reports a wrong key with the line number', async ({page}) => {
   await expect(page.getByRole('alert')).toContainText('Fehler in Zeile 1');
 });
 
-test('shows no clear data and stores only the language', async ({page}) => {
-  await encrypt(page);
+test('shows no clear data and stores only the language', async ({
+  page,
+}, testInfo) => {
+  await encryptClearFile(page, testInfo.outputPath());
   await expect(page.locator('body')).not.toContainText(CLEAR_TEXT_SAMPLE);
   await page.getByRole('button', {name: 'en', exact: true}).click();
   const storage = await page.evaluate(() => Object.keys(localStorage));

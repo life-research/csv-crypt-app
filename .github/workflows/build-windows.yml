@@ -78,6 +78,24 @@ jobs:
           -Version $env:VERSION
           -ScreenshotPath screenshots/app-start.png
 
+      # Encrypts and decrypts a file through the UI of the executable and its
+      # native "Save as" dialog (e2e-desktop/).
+      - name: Test executable end to end
+        env:
+          CSV_CRYPT_EXE: src-tauri/target/release/csv-crypt.exe
+        run: npm run test:e2e:desktop
+
+      - name: Upload end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-e2e-report
+          path: |
+            playwright-report/
+            test-results/desktop/
+          if-no-files-found: ignore
+          retention-days: 7
+
       # Shows what the app looked like on the runner, also when the test failed.
       - name: Upload screenshot
         if: always()

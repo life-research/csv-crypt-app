@@ -93,6 +93,11 @@ CI builds it on a GitHub-hosted Windows runner for each tag `vX.Y.Z`
 - The executable needs no Visual C++ runtime and no WebView2 loader DLL.
   It uses the Universal C runtime, which is part of Windows 10 and later.
 - The app starts, opens its window and shows the heading of its page.
+- End-to-end test (`npm run test:e2e:desktop`, `e2e-desktop/`): Playwright
+  connects to the WebView2 page of the executable and encrypts and decrypts
+  a file. A PowerShell script completes the native "Save as" dialog with UI
+  Automation. Runs only on Windows, with the path of the executable in
+  `CSV_CRYPT_EXE`.
 
 CI also keeps a screenshot of the start test for 7 days. The workflow
 also runs for pull requests that change the desktop app, and on the
