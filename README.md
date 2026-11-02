@@ -37,6 +37,20 @@ time. To start the app:
        width="600">
 </p>
 
+Instead, you can unblock the file before you start it:
+
+1. Right-click the file and click **Properties** (German: **Eigenschaften**).
+2. On the tab **General**, select **Unblock** (German: **Zulassen**) and
+   click **OK**.
+
+Or in PowerShell: `Unblock-File .\csv-crypt-X.Y.Z-windows-x64.exe`
+
+Do this only for a file that you downloaded from the release page and
+[verified](#verify-the-download).
+
+If there is no **Run anyway** button, see
+[Smart App Control and managed devices](#smart-app-control-and-managed-devices).
+
 ## Usage
 
 ### Encrypt a file
@@ -92,6 +106,69 @@ per row:
 Computers with less RAM (e.g. 8 GB) and the desktop app (WebView2 on
 Windows) are not measured yet. On such computers, large files can fail
 earlier.
+
+## More about the download
+
+### Smart App Control and managed devices
+
+Some computers do not let you start the app at all. There is then no
+**Run anyway** button:
+
+- **Smart App Control** (Windows 11) blocks all unsigned apps. We do not
+  recommend to turn it off for this app.
+- On a **managed device** (for example a computer of your employer), a
+  policy of your IT department can block apps that it does not know.
+
+In both cases, ask your IT department to allow the app. Give them the link
+to the release and the checksum of the file. Until the executable has a
+code signature, there is no other solution.
+
+### Verify the download
+
+Each release contains a checksum file (`.sha256`). Compare it with the
+checksum of your download.
+
+In PowerShell:
+
+```powershell
+Get-FileHash .\csv-crypt-X.Y.Z-windows-x64.exe -Algorithm SHA256
+Get-Content .\csv-crypt-X.Y.Z-windows-x64.exe.sha256
+```
+
+The two values must be the same (PowerShell shows the checksum in capital
+letters). On Linux or macOS:
+
+```sh
+sha256sum -c csv-crypt-X.Y.Z-windows-x64.exe.sha256
+```
+
+The checksum shows that the download is complete. The SLSA provenance
+(`.intoto.jsonl`) also shows that this repository's workflow built the
+executable from the release tag. Check it with
+[slsa-verifier](https://github.com/slsa-framework/slsa-verifier):
+
+```sh
+slsa-verifier verify-artifact csv-crypt-X.Y.Z-windows-x64.exe \
+  --provenance-path csv-crypt-X.Y.Z-windows-x64.exe.intoto.jsonl \
+  --source-uri github.com/life-research/csv-crypt-app \
+  --source-tag vX.Y.Z
+```
+
+The provenance does not replace a code signature: Windows still shows the
+SmartScreen warning.
+
+### Official and unofficial builds
+
+Only the files on the
+[release page](https://github.com/life-research/csv-crypt-app/releases)
+are official. All other builds are unofficial:
+
+- builds that you make yourself (see [Desktop app](#desktop-app-tauri)),
+- builds of pull requests and manual workflow runs. Their file name
+  contains the commit, for example
+  `csv-crypt-X.Y.Z-dev.3f2a9c1-windows-x64.exe`.
+
+Do not give unofficial builds to other persons.
 
 ## Builds
 
@@ -202,20 +279,7 @@ While the repository is private, the release has no provenance: Sigstore
 writes each signature to the public Rekor log, which would make the names
 of the repository public.
 
-To verify a downloaded executable:
-
-```sh
-sha256sum -c csv-crypt-X.Y.Z-windows-x64.exe.sha256
-slsa-verifier verify-artifact csv-crypt-X.Y.Z-windows-x64.exe \
-  --provenance-path csv-crypt-X.Y.Z-windows-x64.exe.intoto.jsonl \
-  --source-uri github.com/life-research/csv-crypt-app \
-  --source-tag vX.Y.Z
-```
-
-[slsa-verifier](https://github.com/slsa-framework/slsa-verifier) checks
-that the executable was built by this repository's workflow from the tag.
-The provenance does not replace Windows code signing: Windows still shows
-the SmartScreen warning.
+To verify a downloaded executable, see [Verify the download](#verify-the-download).
 
 The executable needs the WebView2 runtime. Windows 11 and up-to-date
 Windows 10 include it. Without it, the app does not start.
@@ -266,6 +330,43 @@ npm run cross-check   # encrypt with this app, decrypt with the jar
   (German Excel "CSV (Trennzeichen-getrennt)"). The CLI reads it as UTF-8.
 - Decrypted output defaults to the Excel format (UTF-16LE, BOM, tab), like
   `--out-optimize-win`.
+
+## Code signing policy
+
+This policy applies to all official releases. At the moment, the
+executable has no code signature yet.
+
+### Roles
+
+The project has two maintainers. They are the members of the GitHub team
+<!-- TODO: link to the maintainer team -->.
+
+- **Committers:** the maintainers. They write the changes.
+- **Reviewers:** the maintainers. Each change needs the approval of the
+  maintainer who did not write it.
+- **Approvers:** the maintainers. They create release tags and publish
+  releases.
+
+### How a release is built and approved
+
+1. Each change to `main` needs a pull request, an approval of the other
+   maintainer and passing CI checks, including the Windows build.
+2. A maintainer creates the release tag `vX.Y.Z`. Nobody can move or
+   delete a release tag.
+3. GitHub Actions builds the executable from the tag, on a GitHub-hosted
+   runner. The build fails if the tagged commit is not on `main`.
+4. The workflow creates a draft release with the executable, its checksum,
+   the SBOM and the SLSA provenance.
+5. A maintainer checks the draft and publishes it.
+
+Nobody builds or signs an official release on a local computer.
+
+### Privacy
+
+This program does not transfer any information to other networked
+systems. It has no telemetry and no update check. The encryption runs
+completely on your computer, and a Content Security Policy blocks all
+network requests.
 
 ## License
 
