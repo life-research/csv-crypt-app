@@ -238,8 +238,8 @@ CI builds it on a GitHub-hosted Windows runner for each tag `vX.Y.Z`
   `CSV_CRYPT_CDP_PORT`). The release executable does not contain this code.
 
 CI also keeps a screenshot of the start test for 7 days. The workflow
-also runs for pull requests that change the desktop app, and on the
-Actions page ("Run workflow") for any branch.
+also runs for every pull request, and on the Actions page ("Run workflow")
+for any branch.
 
 The workflow run keeps `csv-crypt-X.Y.Z-windows-x64.exe` and its `.sha256`
 file as an artifact. Only tag builds have this name. Builds of pull requests
@@ -354,10 +354,14 @@ The project has two maintainers. They are the members of the GitHub team
 2. A maintainer creates the release tag `vX.Y.Z`. Nobody can move or
    delete a release tag.
 3. GitHub Actions builds the executable from the tag, on a GitHub-hosted
-   runner. The build fails if the tagged commit is not on `main`.
+   runner.
 4. The workflow creates a draft release with the executable, its checksum,
    the SBOM and the SLSA provenance.
 5. A maintainer checks the draft and publishes it.
+
+Official releases come from `main`. The maintainers check this by hand
+before they publish a release, and withdraw a release that was published
+by mistake. Test builds from other branches are not official releases.
 
 Nobody builds or signs an official release on a local computer.
 
