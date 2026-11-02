@@ -15,6 +15,17 @@ const EXPECTED_DECRYPTED = readFileSync(
   resolve(FIXTURES, 'cli/example-comma-utf8.decrypt-utf8.csv'),
 );
 
+/**
+ * Column 1 of an encrypted file stays readable. Column 2 is Base64, so it
+ * contains no separator, and each line is one record.
+ */
+function firstColumn(encrypted: string): string[] {
+  return encrypted
+    .trimEnd()
+    .split('\n')
+    .map((line) => line.split(',')[0]);
+}
+
 const test = base.extend<{app: App}>({
   // Playwright requires the object pattern, also without fixtures.
   // eslint-disable-next-line no-empty-pattern
@@ -57,7 +68,9 @@ test('encrypts and decrypts a file in the desktop app', async ({
     directory,
   );
   expect(encryptedPath).toMatch(/example-comma-utf8_crypt\.csv$/);
-  expect(readFileSync(encryptedPath, 'utf8')).not.toContain(CLEAR_TEXT_SAMPLE);
+  const encrypted = readFileSync(encryptedPath, 'utf8');
+  expect(encrypted).not.toContain(CLEAR_TEXT_SAMPLE);
+  expect(firstColumn(encrypted)).toEqual(['id', '1', '2', '3', '4', '5']);
 
   const keyPath = await saveFile(page, 'Als Datei speichern', directory);
   expect(readFileSync(keyPath, 'utf8')).toBe(`${key}\n`);
