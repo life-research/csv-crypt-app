@@ -5,19 +5,10 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
-  # Catches a broken Windows build before the release.
+  # Catches a broken Windows build before the release. Runs for every pull
+  # request: the build is a required check, and a check that does not start
+  # blocks the merge.
   pull_request:
-    paths:
-      - 'src-tauri/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'rust-toolchain.toml'
-      - '.node-version'
-      - 'scripts/check-version.js'
-      - 'scripts/check-sbom.js'
-      - 'vite.config.ts'
-      - '.github/scripts/verify-windows-exe.ps1'
-      - '.github/workflows/build-windows.yml'
   # Manual start for any branch ("Run workflow" on the Actions page).
   workflow_dispatch:
 
