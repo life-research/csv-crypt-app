@@ -32,7 +32,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       # The cross-check tests decrypt files from this app with the original CLI.
@@ -45,7 +45,7 @@ jobs:
       - name: Install csv-crypt CLI
         env:
           # Check the CLI release against a pinned checksum here, it must be updated accordingly
-          # renovate: datasource=github-releases depName=life-research/csv-crypt
+          # renovate: datasource=github-release-attachments depName=life-research/csv-crypt
           CSV_CRYPT_VERSION: v0.5
           CSV_CRYPT_CHECKSUM: de14ccc68ad2e28e442ee569e9f251c1fc1e07de7384f51a1ef3a53100524c30
         run: .github/scripts/install-csv-crypt-cli.sh
@@ -88,7 +88,9 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
 
       - name: Set up Rust
-        run: rustup toolchain install stable --profile minimal --component llvm-tools-preview
+        run: |
+          rustup toolchain install
+          rustup component add llvm-tools-preview
 
       # No frontend build: only `tauri build` sets the custom-protocol feature
       # that embeds build-desktop/. Without it, cargo builds the dev mode.
@@ -127,7 +129,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies

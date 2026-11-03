@@ -33,7 +33,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
@@ -70,7 +70,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
 
       - name: Set up Rust
-        run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
+        run: rustup toolchain install
 
       # No frontend build: only `tauri build` sets the custom-protocol feature
       # that embeds build-desktop/. Without it, cargo builds the dev mode.
@@ -124,7 +124,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
 
       # Low severity findings show in the log, but do not block. Dependabot
       # alerts list them too.
@@ -134,7 +134,7 @@ jobs:
       - name: Install cargo-audit
         env:
           # Check the cargo-audit binary against a pinned checksum here, it must be updated accordingly
-          # renovate: datasource=github-release-attachments depName=rustsec/rustsec versioning=regex:^cargo-audit/v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
+          # renovate: datasource=github-release-attachments depName=rustsec/rustsec extractVersion=^cargo-audit/(?<version>v.+)$
           CARGO_AUDIT_VERSION: v0.22.2
           CARGO_AUDIT_CHECKSUM: 7fb9497f8594b389e5fce5ef9b92db08432996895b2e0c5a0167a69ed445c428
         run: .github/scripts/install-cargo-audit.sh

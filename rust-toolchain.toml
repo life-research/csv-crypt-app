@@ -1,0 +1,6 @@
+# Exact version, so that a rebuild of a release tag uses the same compiler.
+# Renovate updates it.
+[toolchain]
+channel = "1.99.1"
+profile = "minimal"
+components = ["rustfmt", "clippy"]
