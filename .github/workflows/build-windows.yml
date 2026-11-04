@@ -86,6 +86,16 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}\target-e2e
         run: npx tauri build --no-bundle --features e2e -- --locked
 
+      # The "Save as" dialog hides known extensions by default. The test keeps
+      # the suggested file name, so it must see the extension
+      # (e2e-desktop/save-dialog.ps1).
+      - name: Show file name extensions
+        shell: pwsh
+        run: >-
+          Set-ItemProperty
+          -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+          -Name HideFileExt -Value 0 -Type DWord
+
       # Encrypts and decrypts a file through the UI of the test executable
       # and its native "Save as" dialog (e2e-desktop/).
       - name: Test executable end to end
