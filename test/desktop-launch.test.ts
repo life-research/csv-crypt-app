@@ -1,6 +1,6 @@
 import {createServer} from 'node:net';
 import {describe, expect, it, vi} from 'vitest';
-import {findFreePort, waitForCdp} from '../e2e-desktop/launch';
+import {appEnvironment, findFreePort, waitForCdp} from '../e2e-desktop/launch';
 
 const ENDPOINT = 'http://127.0.0.1:9222';
 
@@ -74,5 +74,29 @@ describe('findFreePort', () => {
     server.close();
 
     expect(port).toBeGreaterThan(0);
+  });
+});
+
+describe('appEnvironment', () => {
+  it('opens the CDP port and uses its own user data folder', () => {
+    const env = appEnvironment(9222, 'C:\\Temp\\webview2', {PATH: 'C:\\bin'});
+
+    expect(env).toEqual({
+      PATH: 'C:\\bin',
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: '--remote-debugging-port=9222',
+      WEBVIEW2_USER_DATA_FOLDER: 'C:\\Temp\\webview2',
+    });
+  });
+
+  it('replaces values of the base environment', () => {
+    const env = appEnvironment(1, 'new', {
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: '--other',
+      WEBVIEW2_USER_DATA_FOLDER: 'old',
+    });
+
+    expect(env.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS).toBe(
+      '--remote-debugging-port=1',
+    );
+    expect(env.WEBVIEW2_USER_DATA_FOLDER).toBe('new');
   });
 });

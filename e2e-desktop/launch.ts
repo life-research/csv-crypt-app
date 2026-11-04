@@ -2,7 +2,10 @@
 // Playwright cannot start the executable itself: WebView2 opens a port for
 // the Chrome DevTools Protocol (CDP), and Playwright connects to it.
 import {spawn, type ChildProcess} from 'node:child_process';
+import {mkdtemp, rm} from 'node:fs/promises';
 import {createServer} from 'node:net';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {chromium, type Browser, type Page} from '@playwright/test';
 
 export interface WaitOptions {
@@ -76,16 +79,37 @@ export interface App {
   close(): Promise<void>;
 }
 
+/**
+ * The environment of the app. Each start gets its own WebView2 user data
+ * folder: a WebView2 browser process of an earlier start (for example from
+ * the start check in CI) can still run on the default folder. A new start
+ * then uses that process, and WebView2 ignores the new browser arguments,
+ * so the CDP port never opens.
+ */
+export function appEnvironment(
+  port: number,
+  userDataFolder: string,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  return {
+    ...baseEnv,
+    WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
+    WEBVIEW2_USER_DATA_FOLDER: userDataFolder,
+  };
+}
+
 export async function launchApp(executable: string): Promise<App> {
   const port = await findFreePort();
   const endpoint = `http://127.0.0.1:${port}`;
+  const userDataFolder = await mkdtemp(join(tmpdir(), 'csv-crypt-webview2-'));
   const child = spawn(executable, [], {
-    env: {
-      ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
-    },
+    env: appEnvironment(port, userDataFolder),
     stdio: 'inherit',
   });
+  const stop = async () => {
+    child.kill();
+    await removeFolder(userDataFolder);
+  };
   try {
     await waitForCdp(endpoint, {isAlive: () => isRunning(child)});
     const browser = await chromium.connectOverCDP(endpoint);
@@ -95,12 +119,22 @@ export async function launchApp(executable: string): Promise<App> {
       processId: child.pid!,
       close: async () => {
         await browser.close();
-        child.kill();
+        await stop();
       },
     };
   } catch (error) {
-    child.kill();
+    await stop();
     throw error;
+  }
+}
+
+/** WebView2 processes can hold files for a short time after the app exits. */
+async function removeFolder(folder: string): Promise<void> {
+  try {
+    await rm(folder, {recursive: true, force: true, maxRetries: 10});
+  } catch (error) {
+    // A left-over temporary folder must not fail the test.
+    console.warn(`Could not remove ${folder}: ${String(error)}`);
   }
 }
 
