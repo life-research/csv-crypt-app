@@ -1,11 +1,12 @@
 // Starts the desktop app and connects Playwright to its WebView2 page.
 // Playwright cannot start the executable itself: WebView2 opens a port for
 // the Chrome DevTools Protocol (CDP), and Playwright connects to it.
-import {spawn, type ChildProcess} from 'node:child_process';
+import {execFile, spawn, type ChildProcess} from 'node:child_process';
 import {mkdtemp, rm} from 'node:fs/promises';
 import {createServer} from 'node:net';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join, resolve} from 'node:path';
+import {promisify} from 'node:util';
 import {chromium, type Browser, type Page} from '@playwright/test';
 
 export interface WaitOptions {
@@ -17,6 +18,9 @@ export interface WaitOptions {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
 }
+
+const execFileAsync = promisify(execFile);
+const DIAGNOSE_SCRIPT = resolve(import.meta.dirname, 'diagnose-webview2.ps1');
 
 const sleepFor = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -123,8 +127,34 @@ export async function launchApp(executable: string): Promise<App> {
       },
     };
   } catch (error) {
+    await printDiagnosis(child, userDataFolder);
     await stop();
     throw error;
+  }
+}
+
+/** Shows the WebView2 processes while the app still runs. */
+async function printDiagnosis(
+  child: ChildProcess,
+  userDataFolder: string,
+): Promise<void> {
+  if (process.platform !== 'win32' || !isRunning(child)) {
+    return;
+  }
+  try {
+    const {stdout} = await execFileAsync('pwsh', [
+      '-NoProfile',
+      '-File',
+      DIAGNOSE_SCRIPT,
+      '-ProcessId',
+      String(child.pid),
+      '-UserDataFolder',
+      userDataFolder,
+    ]);
+    console.log(stdout);
+  } catch (error) {
+    // The diagnosis must not hide the real error.
+    console.warn(`No WebView2 diagnosis: ${String(error)}`);
   }
 }
 
