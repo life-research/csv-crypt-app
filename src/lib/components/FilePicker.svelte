@@ -1,5 +1,8 @@
 <script lang="ts">
+  import {ACCEPT} from '#lib/file-names.ts';
   import {i18n} from '#lib/i18n/i18n.svelte.ts';
+  import {rejectedFileMessage} from '#lib/messages.ts';
+  import StatusMessage from './StatusMessage.svelte';
 
   const {
     file,
@@ -8,6 +11,20 @@
   }: {file: File | null; id: string; onselect: (file: File) => void} = $props();
 
   let dragging = $state(false);
+  // A rejected file keeps the previous selection.
+  let rejectedName = $state('');
+  // Derived, so that the message follows a change of the language.
+  const rejection = $derived(
+    rejectedName ? rejectedFileMessage(i18n.t, rejectedName) : null,
+  );
+
+  function select(selected: File) {
+    const rejected = rejectedFileMessage(i18n.t, selected.name) !== null;
+    rejectedName = rejected ? selected.name : '';
+    if (!rejected) {
+      onselect(selected);
+    }
+  }
 
   function onChange(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -15,7 +32,7 @@
     // Allows to select the same file again after a reset.
     input.value = '';
     if (selected) {
-      onselect(selected);
+      select(selected);
     }
   }
 
@@ -24,7 +41,7 @@
     dragging = false;
     const dropped = event.dataTransfer?.files[0];
     if (dropped) {
-      onselect(dropped);
+      select(dropped);
     }
   }
 </script>
@@ -49,11 +66,9 @@
   {:else}
     <span class="text-slate-600">{i18n.t('file.drop')}</span>
   {/if}
-  <input
-    {id}
-    type="file"
-    accept=".csv,.txt,text/csv,text/plain"
-    class="sr-only"
-    onchange={onChange}
-  />
+  <input {id} type="file" accept={ACCEPT} class="sr-only" onchange={onChange} />
 </label>
+
+{#if rejection}
+  <div class="mt-2"><StatusMessage kind="error" text={rejection} /></div>
+{/if}

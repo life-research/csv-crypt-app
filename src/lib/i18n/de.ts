@@ -1,7 +1,7 @@
 export const de = {
   'app.title': 'CSV Crypt',
   'app.subtitle':
-    'Verschlüsselt CSV-Dateien zeilenweise. Die erste Spalte bleibt lesbar.',
+    'Verschlüsselt CSV- und Excel-Dateien zeilenweise. Die erste Spalte bleibt lesbar.',
   'app.privacy':
     'Ihre Daten verlassen diesen Computer nicht. Die Verschlüsselung läuft vollständig im Browser.',
   'app.version': 'Version {version}',
@@ -13,6 +13,10 @@ export const de = {
   'file.drop': 'Datei hierher ziehen oder klicken zum Auswählen',
   'file.selected': 'Ausgewählt: {name}',
   'file.change': 'Andere Datei wählen',
+  'file.unsupported':
+    'Die App kann die Datei „{name}“ nicht verarbeiten. Erlaubt sind CSV- und Excel-Dateien ({extensions}).',
+  'file.excelHint':
+    'Excel-Datei: Die App verarbeitet alle Blätter. Nur die Werte bleiben erhalten, Formatierung und Formeln gehen verloren.',
 
   'separator.label': 'Trennzeichen der Eingabedatei',
   'separator.auto': 'Automatisch erkennen',
@@ -22,6 +26,7 @@ export const de = {
 
   'info.summary':
     '{lines} Zeilen · Kodierung {encoding} · Trennzeichen {separator}',
+  'info.workbook': '{sheets} Blätter · {lines} Zeilen',
 
   'encrypt.ownKey': 'Vorhandenen Schlüssel verwenden',
   'encrypt.ownKeyHint':
@@ -52,11 +57,16 @@ export const de = {
   'action.saved': 'Gespeichert.',
 
   'error.line': 'Fehler in Zeile {line}: {message}',
+  'error.sheetLine': 'Fehler im Blatt „{sheet}“, Zeile {line}: {message}',
   'error.invalid-cipher-text':
     'Die zweite Spalte enthält keine gültigen verschlüsselten Daten.',
   'error.wrong-key-or-corrupt':
     'Der Schlüssel ist falsch, oder die Datei wurde verändert.',
   'error.unclosedQuote':
     'Ein Anführungszeichen (") ab Zeile {line} wird nicht geschlossen.',
+  'error.xlsFile':
+    'Die App kann alte Excel-Dateien (.xls) nicht lesen. Bitte speichern Sie die Datei in Excel als .xlsx.',
+  'error.excelCell':
+    'Die Zelle {cell} im Blatt „{sheet}“ enthält einen Excel-Fehler (zum Beispiel #DIV/0!). Bitte korrigieren Sie die Zelle.',
   'error.unexpected': 'Unerwarteter Fehler: {message}',
 } as const;

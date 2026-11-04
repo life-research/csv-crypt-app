@@ -3,7 +3,7 @@ import type {Messages} from './i18n';
 export const en: Messages = {
   'app.title': 'CSV Crypt',
   'app.subtitle':
-    'Encrypts CSV files line by line. The first column stays readable.',
+    'Encrypts CSV and Excel files line by line. The first column stays readable.',
   'app.privacy':
     'Your data does not leave this computer. The encryption runs completely in the browser.',
   'app.version': 'Version {version}',
@@ -15,6 +15,10 @@ export const en: Messages = {
   'file.drop': 'Drop a file here or click to select one',
   'file.selected': 'Selected: {name}',
   'file.change': 'Select another file',
+  'file.unsupported':
+    'The app cannot process the file “{name}”. Allowed are CSV and Excel files ({extensions}).',
+  'file.excelHint':
+    'Excel file: all sheets are processed. Only the values stay; formatting and formulas are lost.',
 
   'separator.label': 'Separator of the input file',
   'separator.auto': 'Detect automatically',
@@ -23,6 +27,7 @@ export const en: Messages = {
   'separator.tab': 'Tab',
 
   'info.summary': '{lines} lines · encoding {encoding} · separator {separator}',
+  'info.workbook': '{sheets} sheets · {lines} lines',
 
   'encrypt.ownKey': 'Use an existing key',
   'encrypt.ownKeyHint': 'Usually the app makes a new key for each transfer.',
@@ -52,10 +57,15 @@ export const en: Messages = {
   'action.saved': 'Saved.',
 
   'error.line': 'Error in line {line}: {message}',
+  'error.sheetLine': 'Error in sheet “{sheet}”, line {line}: {message}',
   'error.invalid-cipher-text':
     'The second column contains no valid encrypted data.',
   'error.wrong-key-or-corrupt':
     'The key is wrong, or somebody changed the file.',
   'error.unclosedQuote': 'A quote (") from line {line} is not closed.',
+  'error.xlsFile':
+    'Legacy Excel files (.xls) are not supported. Please save the file in Excel as .xlsx.',
+  'error.excelCell':
+    'Cell {cell} in sheet “{sheet}” contains an Excel error (for example #DIV/0!). Please correct the cell.',
   'error.unexpected': 'Unexpected error: {message}',
 };

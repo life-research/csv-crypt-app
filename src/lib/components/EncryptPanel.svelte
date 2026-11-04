@@ -1,7 +1,9 @@
 <script lang="ts">
   import {generateHexKey, isValidHexKey} from '#lib/crypto/key.ts';
+  import {isExcelFileName} from '#lib/file-names.ts';
   import {
     encryptFile,
+    OUTPUT_TYPES,
     type FileResult,
     type SeparatorChoice,
   } from '#lib/files.ts';
@@ -27,6 +29,7 @@
   let error = $state('');
   let saved = $state(false);
 
+  const isExcel = $derived(file !== null && isExcelFileName(file.name));
   const canStart = $derived(
     file !== null && !working && (!useOwnKey || isValidHexKey(ownKey)),
   );
@@ -55,8 +58,9 @@
 
   async function save() {
     if (result && file) {
-      const name = outputFileName(file.name, 'crypt');
-      saved = (await saveFile(result.output, name, 'text/csv')) === 'saved';
+      const {extension, mimeType} = OUTPUT_TYPES[result.input.kind];
+      const name = outputFileName(file.name, 'crypt', extension);
+      saved = (await saveFile(result.output, name, mimeType)) === 'saved';
     }
   }
 
@@ -79,13 +83,18 @@
 <div class="space-y-5">
   <FilePicker id="encrypt-file" {file} onselect={selectFile} />
 
-  <div>
-    <SeparatorSelect
-      id="encrypt-separator"
-      bind:value={separator}
-      onchange={clearResult}
-    />
-  </div>
+  <!-- The separator and the output format apply only to CSV and text files. -->
+  {#if isExcel}
+    <p class="text-sm text-slate-600">{i18n.t('file.excelHint')}</p>
+  {:else if file}
+    <div>
+      <SeparatorSelect
+        id="encrypt-separator"
+        bind:value={separator}
+        onchange={clearResult}
+      />
+    </div>
+  {/if}
 
   <div>
     <label class="flex items-center gap-2 text-sm">

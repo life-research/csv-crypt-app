@@ -17,13 +17,13 @@ const UTF16LE_BOM = [0xff, 0xfe];
 const UTF16BE_BOM = [0xfe, 0xff];
 
 export function decodeInput(bytes: Uint8Array): DecodedText {
-  if (startsWith(bytes, UTF8_BOM)) {
+  if (startsWithBytes(bytes, UTF8_BOM)) {
     return decode(bytes.subarray(UTF8_BOM.length), 'utf-8');
   }
-  if (startsWith(bytes, UTF16LE_BOM)) {
+  if (startsWithBytes(bytes, UTF16LE_BOM)) {
     return decode(bytes.subarray(UTF16LE_BOM.length), 'utf-16le');
   }
-  if (startsWith(bytes, UTF16BE_BOM)) {
+  if (startsWithBytes(bytes, UTF16BE_BOM)) {
     return decode(bytes.subarray(UTF16BE_BOM.length), 'utf-16be');
   }
   return isValidUtf8(bytes)
@@ -45,7 +45,7 @@ function isValidUtf8(bytes: Uint8Array): boolean {
   }
 }
 
-function startsWith(bytes: Uint8Array, prefix: number[]): boolean {
+export function startsWithBytes(bytes: Uint8Array, prefix: number[]): boolean {
   return prefix.every((byte, i) => bytes[i] === byte);
 }
 
