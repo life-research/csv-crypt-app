@@ -95,9 +95,12 @@ CI builds it on a GitHub-hosted Windows runner for each tag `vX.Y.Z`
 - The app starts, opens its window and shows the heading of its page.
 - End-to-end test (`npm run test:e2e:desktop`, `e2e-desktop/`): Playwright
   connects to the WebView2 page of the executable and encrypts and decrypts
-  a file. A PowerShell script completes the native "Save as" dialog with UI
-  Automation. Runs only on Windows, with the path of the executable in
-  `CSV_CRYPT_EXE`.
+  a CSV file. A PowerShell script completes the native
+  "Save as" dialog with UI Automation. Runs only on Windows, with the path
+  of the executable in `CSV_CRYPT_EXE`. The test needs a separate test
+  build (`npx tauri build --no-bundle --features e2e`): only this build
+  opens the port for the Chrome DevTools Protocol (variable
+  `CSV_CRYPT_CDP_PORT`). The release executable does not contain this code.
 
 CI also keeps a screenshot of the start test for 7 days. The workflow
 also runs for pull requests that change the desktop app, and on the

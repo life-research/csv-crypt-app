@@ -83,20 +83,18 @@ describe('appEnvironment', () => {
 
     expect(env).toEqual({
       PATH: 'C:\\bin',
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: '--remote-debugging-port=9222',
+      CSV_CRYPT_CDP_PORT: '9222',
       WEBVIEW2_USER_DATA_FOLDER: 'C:\\Temp\\webview2',
     });
   });
 
   it('replaces values of the base environment', () => {
     const env = appEnvironment(1, 'new', {
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: '--other',
+      CSV_CRYPT_CDP_PORT: '2',
       WEBVIEW2_USER_DATA_FOLDER: 'old',
     });
 
-    expect(env.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS).toBe(
-      '--remote-debugging-port=1',
-    );
+    expect(env.CSV_CRYPT_CDP_PORT).toBe('1');
     expect(env.WEBVIEW2_USER_DATA_FOLDER).toBe('new');
   });
 });

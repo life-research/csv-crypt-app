@@ -1,6 +1,7 @@
 // Starts the desktop app and connects Playwright to its WebView2 page.
 // Playwright cannot start the executable itself: WebView2 opens a port for
-// the Chrome DevTools Protocol (CDP), and Playwright connects to it.
+// the Chrome DevTools Protocol (CDP), and Playwright connects to it. Only
+// the test build of the app (`--features e2e`) opens this port.
 import {execFile, spawn, type ChildProcess} from 'node:child_process';
 import {mkdtemp, rm} from 'node:fs/promises';
 import {createServer} from 'node:net';
@@ -84,11 +85,16 @@ export interface App {
 }
 
 /**
+ * Only the test build of the app reads it (`src-tauri/src/e2e.rs`).
+ * WebView2 ignores `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`, because wry
+ * always sets its own browser arguments.
+ */
+export const CDP_PORT_VARIABLE = 'CSV_CRYPT_CDP_PORT';
+
+/**
  * The environment of the app. Each start gets its own WebView2 user data
- * folder: a WebView2 browser process of an earlier start (for example from
- * the start check in CI) can still run on the default folder. A new start
- * then uses that process, and WebView2 ignores the new browser arguments,
- * so the CDP port never opens.
+ * folder: no data of earlier starts, and WebView2 requires a separate
+ * folder for other browser arguments.
  */
 export function appEnvironment(
   port: number,
@@ -97,7 +103,7 @@ export function appEnvironment(
 ): NodeJS.ProcessEnv {
   return {
     ...baseEnv,
-    WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
+    [CDP_PORT_VARIABLE]: String(port),
     WEBVIEW2_USER_DATA_FOLDER: userDataFolder,
   };
 }

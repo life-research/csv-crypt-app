@@ -78,11 +78,19 @@ jobs:
           -Version $env:VERSION
           -ScreenshotPath screenshots/app-start.png
 
-      # Encrypts and decrypts a file through the UI of the executable and its
-      # native "Save as" dialog (e2e-desktop/).
+      # A second executable with the feature e2e: only it opens the CDP port
+      # for Playwright (src-tauri/src/e2e.rs). Its own target folder keeps
+      # the release executable unchanged.
+      - name: Build test executable
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}\target-e2e
+        run: npx tauri build --no-bundle --features e2e -- --locked
+
+      # Encrypts and decrypts a file through the UI of the test executable
+      # and its native "Save as" dialog (e2e-desktop/).
       - name: Test executable end to end
         env:
-          CSV_CRYPT_EXE: src-tauri/target/release/csv-crypt.exe
+          CSV_CRYPT_EXE: ${{ runner.temp }}\target-e2e\release\csv-crypt.exe
         run: npm run test:e2e:desktop
 
       - name: Upload end-to-end report
