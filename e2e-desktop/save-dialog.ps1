@@ -99,38 +99,6 @@ function Wait-For {
   }
 }
 
-# Writes the UI Automation tree below $Element to stderr, so that a failed
-# test shows the real controls of the dialog.
-function Write-Tree {
-  param($Element, [int] $Depth = 0, [int] $MaxDepth = 8)
-  $walker = [System.Windows.Automation.TreeWalker]::RawViewWalker
-  $info = $Element.Current
-  $indent = '  ' * $Depth
-  [Console]::Error.WriteLine(
-    "$indent$($info.ControlType.ProgrammaticName) id='$($info.AutomationId)' " +
-    "class='$($info.ClassName)' name='$($info.Name)'")
-  if ($Depth -ge $MaxDepth) {
-    return
-  }
-  $child = $walker.GetFirstChild($Element)
-  while ($null -ne $child) {
-    Write-Tree -Element $child -Depth ($Depth + 1) -MaxDepth $MaxDepth
-    $child = $walker.GetNextSibling($child)
-  }
-}
-
-# Like Wait-For, but writes the dialog tree before it fails.
-function Wait-InDialog {
-  param([scriptblock] $Find, [string] $Description)
-  try {
-    Wait-For -Find $Find -Description $Description
-  }
-  catch {
-    [Console]::Error.WriteLine("== UI Automation tree of the dialog")
-    try { Write-Tree -Element $dialog } catch { [Console]::Error.WriteLine("(no tree: $_)") }
-    throw
-  }
-}
 
 $dialogCondition = New-Condition ($automation::ProcessIdProperty) $ProcessId `
   ($automation::ClassNameProperty) '#32770'
@@ -138,11 +106,11 @@ $dialog = Wait-For -Description "'Save as' dialog of process $ProcessId" -Find {
   $automation::RootElement.FindFirst($treeScope::Children, $dialogCondition)
 }
 
-$fileNameEdit = Wait-InDialog -Description 'file name field' -Find {
+$fileNameEdit = Wait-For -Description 'file name field' -Find {
   $dialog.FindFirst($treeScope::Descendants,
     (New-ControlCondition $fileNameEditId $fileNameEditClass))
 }
-$saveButton = Wait-InDialog -Description 'Save button' -Find {
+$saveButton = Wait-For -Description 'Save button' -Find {
   $dialog.FindFirst($treeScope::Descendants,
     (New-ControlCondition $saveButtonId $saveButtonClass))
 }
