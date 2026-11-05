@@ -1,6 +1,8 @@
+import {NotTextFileError} from './csv/content';
 import {CsvParseError, type Separator} from './csv/csv';
 import {TextTooLongError, type InputEncoding} from './csv/encoding';
 import type {DecryptErrorCode} from './crypto/line';
+import {checkFileName, SUPPORTED_EXTENSIONS} from './file-names';
 import type {MessageKey, Params} from './i18n/i18n';
 import {FileTooLargeError, MIB, OutputTooLargeError} from './limits';
 
@@ -12,6 +14,20 @@ export function decryptErrorMessage(
   error: DecryptErrorCode,
 ): string {
   return t('error.line', {line: lineNumber, message: t(`error.${error}`)});
+}
+
+/** Why the app does not take a selected file, or `null` if it does. */
+export function rejectedFileMessage(t: Translate, name: string): string | null {
+  switch (checkFileName(name)) {
+    case 'supported':
+      return null;
+    case 'excel':
+      return t('file.excel', {name});
+    case 'unsupported': {
+      const extensions = SUPPORTED_EXTENSIONS.map((ext) => `.${ext}`);
+      return t('file.unsupported', {name, extensions: extensions.join(', ')});
+    }
+  }
 }
 
 export function unexpectedErrorMessage(t: Translate, error: unknown): string {
@@ -29,6 +45,9 @@ export function unexpectedErrorMessage(t: Translate, error: unknown): string {
   }
   if (error instanceof TextTooLongError) {
     return t('error.textTooLong');
+  }
+  if (error instanceof NotTextFileError) {
+    return t(`error.notText.${error.kind}`);
   }
   const message = error instanceof Error ? error.message : String(error);
   return t('error.unexpected', {message});

@@ -13,6 +13,10 @@ export const de = {
   'file.drop': 'Datei hierher ziehen oder klicken zum Auswählen',
   'file.selected': 'Ausgewählt: {name}',
   'file.change': 'Andere Datei wählen',
+  'file.unsupported':
+    'Die App kann die Datei „{name}“ nicht verarbeiten. Erlaubt sind CSV- und Textdateien ({extensions}).',
+  'file.excel':
+    'Die App kann Excel-Dateien nicht direkt verarbeiten. Bitte öffnen Sie die Datei „{name}“ in Excel und speichern Sie sie als „CSV (Trennzeichen-getrennt)“ oder „Unicode-Text“.',
 
   'separator.label': 'Trennzeichen der Eingabedatei',
   'separator.auto': 'Automatisch erkennen',
@@ -67,5 +71,15 @@ export const de = {
     'Die verschlüsselte Datei wäre größer als {max} MB. Die App könnte sie danach nicht mehr entschlüsseln. Bitte teilen Sie die Datei in kleinere Dateien auf.',
   'error.textTooLong':
     'Der Browser kann den Text dieser Datei nicht lesen, weil sie zu groß ist. Bitte teilen Sie die Datei in kleinere Dateien auf.',
+  'error.notText.excel':
+    'Die Datei ist eine Excel-Datei, keine CSV-Datei. Bitte öffnen Sie sie in Excel und speichern Sie sie als „CSV (Trennzeichen-getrennt)“ oder „Unicode-Text“.',
+  'error.notText.office':
+    'Die Datei ist eine Office-Datei (zum Beispiel .xls oder eine Datei mit Kennwortschutz), keine CSV-Datei. Bitte entfernen Sie einen Kennwortschutz und speichern Sie die Datei in Excel als „CSV (Trennzeichen-getrennt)“.',
+  'error.notText.pdf': 'Die Datei ist ein PDF-Dokument, keine CSV-Datei.',
+  'error.notText.image': 'Die Datei ist ein Bild, keine CSV-Datei.',
+  'error.notText.archive':
+    'Die Datei ist ein Archiv oder ein Office-Dokument (zum Beispiel .zip oder .docx), keine CSV-Datei.',
+  'error.notText.binary':
+    'Die Datei enthält keinen Text. Bitte wählen Sie eine CSV- oder Textdatei.',
   'error.unexpected': 'Unerwarteter Fehler: {message}',
 } as const;
