@@ -22,14 +22,8 @@ export interface BatchOptions extends ProgressOptions {
   pause?: () => Promise<void>;
 }
 
-/**
- * Handles one batch. `firstIndex` is the index of its first record in the
- * file. Returns `false` to stop after this batch.
- */
-export type BatchHandler = (
-  records: string[][],
-  firstIndex: number,
-) => Promise<boolean>;
+/** Handles one batch. Returns `false` to stop after this batch. */
+export type BatchHandler = (records: CsvRecord[]) => Promise<boolean>;
 
 /**
  * Runs `handle` on the records in batches. `textLength` is the length of the
@@ -47,12 +41,12 @@ export async function forEachBatch(
     pause = pauseForBrowser,
   }: BatchOptions = {},
 ): Promise<number> {
-  let batch: string[][] = [];
+  let batch: CsvRecord[] = [];
   let count = 0;
 
   const runBatch = async (end: number): Promise<boolean> => {
     signal?.throwIfAborted();
-    const proceed = await handle(batch, count - batch.length);
+    const proceed = await handle(batch);
     batch = [];
     // A batch has at least one record, so the text is not empty.
     onProgress?.(end / textLength);
@@ -61,10 +55,10 @@ export async function forEachBatch(
     return proceed;
   };
 
-  for (const {fields, end} of records) {
-    batch.push(fields);
+  for (const record of records) {
+    batch.push(record);
     count++;
-    if (batch.length >= batchSize && !(await runBatch(end))) {
+    if (batch.length >= batchSize && !(await runBatch(record.end))) {
       return count;
     }
   }

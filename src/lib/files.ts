@@ -83,7 +83,7 @@ export async function encryptFile(
     async (records) => {
       output.write(
         await Promise.all(
-          records.map((record) => encryptLine(keys, record, random)),
+          records.map(({fields}) => encryptLine(keys, fields, random)),
         ),
       );
       return true;
@@ -106,11 +106,11 @@ export async function decryptFile(
   const lineCount = await forEachBatch(
     opened.records,
     opened.textLength,
-    async (records, firstIndex) => {
+    async (records) => {
       const results = await Promise.all(
-        records.map((record) => decryptLine(keys, record)),
+        records.map(({fields}) => decryptLine(keys, fields)),
       );
-      const checked = checkBatch(results, firstIndex);
+      const checked = checkBatch(results, records);
       if (!checked.ok) {
         failure = checked;
         return false;
@@ -162,23 +162,19 @@ function inputInfo(
 }
 
 /**
- * The decrypted records of a batch, or its first failed line, numbered from 1
- * in the whole file.
+ * The decrypted records of a batch, or its first failed line. The line is
+ * the line in the file, as in an editor: a record can span several lines.
  */
 function checkBatch(
   results: DecryptLineResult[],
-  firstIndex: number,
+  records: CsvRecord[],
 ): {ok: true; records: string[][]} | DecryptFailure {
-  const records: string[][] = [];
+  const decrypted: string[][] = [];
   for (const [index, result] of results.entries()) {
     if (!result.ok) {
-      return {
-        ok: false,
-        lineNumber: firstIndex + index + 1,
-        error: result.error,
-      };
+      return {ok: false, lineNumber: records[index].line, error: result.error};
     }
-    records.push(result.fields);
+    decrypted.push(result.fields);
   }
-  return {ok: true, records};
+  return {ok: true, records: decrypted};
 }
