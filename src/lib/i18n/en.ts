@@ -50,6 +50,9 @@ export const en: Messages = {
   'action.working': 'Please wait …',
   'action.reset': 'Start again',
   'action.saved': 'Saved.',
+  'action.cancel': 'Cancel',
+  'action.cancelled': 'Cancelled. The app did not create a file.',
+  'progress.label': 'Progress',
 
   'error.line': 'Error in line {line}: {message}',
   'error.invalid-cipher-text':

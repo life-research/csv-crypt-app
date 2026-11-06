@@ -7,7 +7,12 @@ import {
   type DecryptLineResult,
 } from './crypto/line';
 import type {RandomBytes} from './crypto/random';
-import {detectSeparator, readCsv, type Separator} from './csv/csv';
+import {
+  detectSeparator,
+  readCsv,
+  type CsvRecord,
+  type Separator,
+} from './csv/csv';
 import {decodeInput, type InputEncoding} from './csv/encoding';
 import {CsvOutput, UTF16LE_WITH_BOM, UTF8} from './csv/output';
 
@@ -43,7 +48,8 @@ export interface FileResult {
 
 /** The records are read lazily, while the batches are processed. */
 interface OpenedInput {
-  records: Iterable<string[]>;
+  records: Iterable<CsvRecord>;
+  textLength: number;
   encoding: InputEncoding;
   separator: Separator;
 }
@@ -67,6 +73,7 @@ export async function encryptFile(
   const output = new CsvOutput(',', UTF8);
   const lineCount = await forEachBatch(
     opened.records,
+    opened.textLength,
     async (records) => {
       output.write(
         await Promise.all(
@@ -92,6 +99,7 @@ export async function decryptFile(
   let failure: DecryptFailure | null = null;
   const lineCount = await forEachBatch(
     opened.records,
+    opened.textLength,
     async (records, firstIndex) => {
       const results = await Promise.all(
         records.map((record) => decryptLine(keys, record)),
@@ -128,6 +136,7 @@ function openInput(input: Uint8Array, choice: SeparatorChoice): OpenedInput {
   const separator = choice === 'auto' ? detectSeparator(text) : choice;
   return {
     records: readCsv(text, separator),
+    textLength: text.length,
     encoding,
     separator,
   };

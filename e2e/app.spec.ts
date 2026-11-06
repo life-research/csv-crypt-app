@@ -104,3 +104,36 @@ test('switches the language', async ({page}) => {
   await page.reload();
   await expect(page.getByRole('tab', {name: 'Decrypt'})).toBeVisible();
 });
+
+/** A CSV file that takes some seconds to encrypt. */
+function largeCsv(rows: number): Buffer {
+  const lines = Array.from(
+    {length: rows},
+    (_, i) => `id${i},value ${i},more text ${i}\n`,
+  );
+  return Buffer.from(lines.join(''));
+}
+
+test('locks the file, shows the progress and cancels a large file', async ({
+  page,
+}) => {
+  await page.locator('#encrypt-file').setInputFiles({
+    name: 'large.csv',
+    mimeType: 'text/csv',
+    buffer: largeCsv(300_000),
+  });
+  await page
+    .getByRole('button', {name: 'Verschlüsseln', exact: true})
+    .last()
+    .click();
+  await expect(
+    page.getByRole('progressbar', {name: 'Fortschritt'}),
+  ).toBeVisible();
+  await expect(page.locator('#encrypt-file')).toBeDisabled();
+  await page.getByRole('button', {name: 'Abbrechen'}).click();
+
+  await expect(page.getByText('Abgebrochen.')).toBeVisible();
+  await expect(page.getByRole('progressbar')).toBeHidden();
+  await expect(page.getByText('Die Datei ist verschlüsselt.')).toBeHidden();
+  await expect(page.locator('#encrypt-file')).toBeEnabled();
+});
