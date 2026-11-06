@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {OutputTooLargeError} from '../limits';
 import {encodeUtf16LeWithBom, encodeUtf8} from './encoding';
 import {CsvOutput, UTF16LE_WITH_BOM, UTF8} from './output';
 
@@ -25,5 +26,19 @@ describe('CsvOutput', () => {
 
   it('gives no bytes for an empty UTF-8 file', () => {
     expect(new CsvOutput(',', UTF8).finish()).toHaveLength(0);
+  });
+
+  it('accepts output up to the maximum size', () => {
+    const output = new CsvOutput(',', UTF8, 4);
+    output.write([['a', 'b']]);
+    expect(output.finish()).toEqual(encodeUtf8('a,b\n'));
+  });
+
+  it('stops when the output gets larger than the maximum size', () => {
+    const output = new CsvOutput(',', UTF8, 6);
+    output.write([['a', 'b']]);
+    expect(() => output.write([['c', 'd']])).toThrow(
+      new OutputTooLargeError(6),
+    );
   });
 });

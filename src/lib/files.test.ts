@@ -1,5 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import {isCancelled} from './batches';
+import {FileTooLargeError, MAX_ENCRYPT_INPUT_BYTES} from './limits';
 import {decryptFile, encryptFile, type DecryptFileResult} from './files';
 import {encodeUtf8} from './csv/encoding';
 import {readFixture, TEST_KEY} from './test-support';
@@ -208,5 +209,14 @@ describe('large files', () => {
     });
     await expect(work).rejects.toSatisfy(isCancelled);
     expect(onProgress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('size limits', () => {
+  it('does not encrypt a file above the limit', async () => {
+    const input = new Uint8Array(MAX_ENCRYPT_INPUT_BYTES + 1);
+    await expect(
+      encryptFile(input, TEST_KEY, {separator: 'auto'}),
+    ).rejects.toThrow(FileTooLargeError);
   });
 });

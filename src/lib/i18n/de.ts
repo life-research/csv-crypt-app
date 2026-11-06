@@ -61,5 +61,11 @@ export const de = {
     'Der Schlüssel ist falsch, oder die Datei wurde verändert.',
   'error.unclosedQuote':
     'Ein Anführungszeichen (") ab Zeile {line} wird nicht geschlossen.',
+  'error.fileTooLarge':
+    'Die Datei ist zu groß ({size} MB). Die App verarbeitet Dateien bis {max} MB. Bitte teilen Sie die Datei in kleinere Dateien auf.',
+  'error.outputTooLarge':
+    'Die verschlüsselte Datei wäre größer als {max} MB. Die App könnte sie danach nicht mehr entschlüsseln. Bitte teilen Sie die Datei in kleinere Dateien auf.',
+  'error.textTooLong':
+    'Der Browser kann den Text dieser Datei nicht lesen, weil sie zu groß ist. Bitte teilen Sie die Datei in kleinere Dateien auf.',
   'error.unexpected': 'Unerwarteter Fehler: {message}',
 } as const;

@@ -8,6 +8,7 @@
     type SeparatorChoice,
   } from '#lib/files.ts';
   import {i18n} from '#lib/i18n/i18n.svelte.ts';
+  import {assertInputSize} from '#lib/limits.ts';
   import {
     decryptErrorMessage,
     inputSummary,
@@ -49,6 +50,8 @@
     progress = 0;
     controller = new AbortController();
     try {
+      // Before reading: a file that is too large can slow down the browser.
+      assertInputSize(file.size, 'decrypt');
       const input = new Uint8Array(await file.arrayBuffer());
       const decrypted = await decryptFile(input, hexKey, {
         separator,

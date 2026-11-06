@@ -4,6 +4,7 @@
  * joined once, at the end.
  */
 import {concatBytes} from '../crypto/cbor';
+import {OutputTooLargeError} from '../limits';
 import {writeCsv, type Separator} from './csv';
 import {encodeUtf16Le, encodeUtf16LeWithBom, encodeUtf8} from './encoding';
 
@@ -24,17 +25,25 @@ export const UTF16LE_WITH_BOM: OutputEncoding = {
 
 export class CsvOutput {
   private parts: Uint8Array<ArrayBuffer>[] = [];
+  private size = 0;
 
+  /** `maxSize`: `write` throws `OutputTooLargeError` above this size. */
   constructor(
     private readonly separator: Separator,
     private readonly encoding: OutputEncoding,
+    private readonly maxSize = Infinity,
   ) {}
 
   write(records: string[][]): void {
     const text = writeCsv(records, this.separator);
     const encode =
       this.parts.length === 0 ? this.encoding.first : this.encoding.rest;
-    this.parts.push(encode(text));
+    const part = encode(text);
+    this.size += part.length;
+    if (this.size > this.maxSize) {
+      throw new OutputTooLargeError(this.maxSize);
+    }
+    this.parts.push(part);
   }
 
   /** The whole file. An empty file still gets its BOM, if any. */

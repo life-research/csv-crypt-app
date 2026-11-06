@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {CsvParseError} from './csv/csv';
+import {TextTooLongError} from './csv/encoding';
+import {FileTooLargeError, MIB, OutputTooLargeError} from './limits';
 import {de} from './i18n/de';
 import {format, type MessageKey, type Params} from './i18n/i18n';
 import {
@@ -20,6 +22,26 @@ describe('messages', () => {
   it('describes an unclosed quote', () => {
     expect(unexpectedErrorMessage(t, new CsvParseError(7))).toContain(
       'Zeile 7',
+    );
+  });
+
+  it('describes a file that is too large, in MB', () => {
+    expect(
+      unexpectedErrorMessage(t, new FileTooLargeError(210.54 * MIB, 200 * MIB)),
+    ).toBe(
+      'Die Datei ist zu groß (210.5 MB). Die App verarbeitet Dateien bis 200 MB. Bitte teilen Sie die Datei in kleinere Dateien auf.',
+    );
+  });
+
+  it('describes an encrypted file that would be too large', () => {
+    expect(
+      unexpectedErrorMessage(t, new OutputTooLargeError(500 * MIB)),
+    ).toContain('größer als 500 MB');
+  });
+
+  it('describes a text that the browser cannot read', () => {
+    expect(unexpectedErrorMessage(t, new TextTooLongError())).toBe(
+      de['error.textTooLong'],
     );
   });
 
