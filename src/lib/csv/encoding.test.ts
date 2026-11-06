@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {decodeInput, encodeUtf16LeWithBom, encodeUtf8} from './encoding';
+import {
+  decodeInput,
+  encodeUtf16Le,
+  encodeUtf16LeWithBom,
+  encodeUtf8,
+} from './encoding';
 
 const bytes = (...values: number[]) => Uint8Array.from(values);
 
@@ -50,5 +55,15 @@ describe('encodeUtf16LeWithBom', () => {
   it('round-trips with decodeInput', () => {
     const text = 'id\tName\näöü 😀\n';
     expect(decodeInput(encodeUtf16LeWithBom(text)).text).toBe(text);
+  });
+});
+
+describe('encodeUtf16Le', () => {
+  it('writes little-endian code units without BOM', () => {
+    expect(Array.from(encodeUtf16Le('aä'))).toEqual([0x61, 0x00, 0xe4, 0x00]);
+  });
+
+  it('gives an empty array for an empty text', () => {
+    expect(encodeUtf16Le('')).toHaveLength(0);
   });
 });

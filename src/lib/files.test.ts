@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {decryptFile, encryptFile, type DecryptFileResult} from './files';
 import {encodeUtf8} from './csv/encoding';
 import {readFixture, TEST_KEY} from './test-support';
@@ -125,5 +125,72 @@ describe('encryptFile', () => {
     await expect(
       encryptFile(encodeUtf8('a,b\n'), 'bad', {separator: 'auto'}),
     ).rejects.toThrow();
+  });
+});
+
+describe('large files', () => {
+  const noPause = () => Promise.resolve();
+  const rows = (count: number) =>
+    Array.from({length: count}, (_, i) => `id${i},value ${i}\n`).join('');
+
+  it('gives the same output in batches as in one step', async () => {
+    const input = encodeUtf8(rows(25));
+    const encrypted = await encryptFile(input, TEST_KEY, {
+      separator: 'auto',
+      batchSize: 4,
+      pause: noPause,
+    });
+    expect(encrypted.input.lineCount).toBe(25);
+    const decrypted = expectOk(
+      await decryptFile(encrypted.output, TEST_KEY, {
+        separator: 'auto',
+        outputFormat: 'excel',
+        batchSize: 4,
+        pause: noPause,
+      }),
+    );
+    const oneStep = expectOk(
+      await decryptFile(encrypted.output, TEST_KEY, {
+        separator: 'auto',
+        outputFormat: 'excel',
+        batchSize: 1000,
+        pause: noPause,
+      }),
+    );
+    expect(decrypted.output).toEqual(oneStep.output);
+    expect(new TextDecoder('utf-16le').decode(decrypted.output)).toBe(
+      rows(25).replaceAll(',', '\t'),
+    );
+  });
+
+  it('reports a bad line in a later batch with its number in the file', async () => {
+    const encrypted = await encryptFile(encodeUtf8(rows(10)), TEST_KEY, {
+      separator: 'auto',
+    });
+    const lines = new TextDecoder().decode(encrypted.output).split('\n');
+    lines[6] = 'id6,broken';
+    const result = await decryptFile(encodeUtf8(lines.join('\n')), TEST_KEY, {
+      separator: 'auto',
+      outputFormat: 'utf8-comma',
+      batchSize: 3,
+      pause: noPause,
+    });
+    expect(result).toEqual({
+      ok: false,
+      lineNumber: 7,
+      error: 'invalid-cipher-text',
+    });
+  });
+
+  it('stops decrypting after the batch with the first bad line', async () => {
+    const pause = vi.fn(noPause);
+    const result = await decryptFile(encodeUtf8(rows(10)), OTHER_KEY, {
+      separator: 'auto',
+      outputFormat: 'utf8-comma',
+      batchSize: 3,
+      pause,
+    });
+    expect(result).toMatchObject({ok: false, lineNumber: 1});
+    expect(pause).toHaveBeenCalledTimes(1);
   });
 });

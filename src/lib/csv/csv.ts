@@ -16,65 +16,73 @@ export class CsvParseError extends Error {
 }
 
 export function parseCsv(text: string, separator: Separator): string[][] {
-  const records: string[][] = [];
+  return Array.from(readCsv(text, separator));
+}
+
+/**
+ * Reads the records one by one, so that a caller can process a large file
+ * without all records in memory. Throws `CsvParseError` when it reaches an
+ * unclosed quote. Plain characters are added as slices, not one by one.
+ */
+export function* readCsv(
+  text: string,
+  separator: Separator,
+): Generator<string[]> {
   let record: string[] = [];
   let field = '';
   let inQuotes = false;
   let line = 1;
   let recordStartLine = 1;
+  // Start of the plain characters that are not yet added to `field`.
+  let runStart = 0;
   let i = 0;
-
-  const endField = () => {
-    record.push(field);
-    field = '';
-  };
-  const endRecord = () => {
-    endField();
-    records.push(record);
-    record = [];
-    recordStartLine = line;
-  };
 
   while (i < text.length) {
     const char = text[i];
     if (inQuotes) {
-      if (char === QUOTE && text[i + 1] === QUOTE) {
-        field += QUOTE;
-        i += 2;
-        continue;
-      }
       if (char === QUOTE) {
-        inQuotes = false;
+        field += text.slice(runStart, i);
+        const escaped = text[i + 1] === QUOTE;
+        field += escaped ? QUOTE : '';
+        inQuotes = escaped;
+        i += escaped ? 2 : 1;
+        runStart = i;
       } else {
-        if (char === '\n') {
-          line++;
-        }
-        field += char;
+        line += char === '\n' ? 1 : 0;
+        i++;
       }
-      i++;
       continue;
     }
     if (char === QUOTE) {
+      field += text.slice(runStart, i);
       inQuotes = true;
+      runStart = ++i;
     } else if (char === separator) {
-      endField();
+      record.push(field + text.slice(runStart, i));
+      field = '';
+      runStart = ++i;
     } else if (char === '\n' || (char === '\r' && text[i + 1] === '\n')) {
-      i += char === '\r' ? 1 : 0;
+      record.push(field + text.slice(runStart, i));
+      field = '';
+      i += char === '\r' ? 2 : 1;
       line++;
-      endRecord();
+      yield record;
+      record = [];
+      recordStartLine = line;
+      runStart = i;
     } else {
-      field += char;
+      i++;
     }
-    i++;
   }
 
   if (inQuotes) {
     throw new CsvParseError(recordStartLine);
   }
+  field += text.slice(runStart);
   if (field !== '' || record.length > 0) {
-    endRecord();
+    record.push(field);
+    yield record;
   }
-  return records;
 }
 
 export function writeCsv(records: string[][], separator: Separator): string {
