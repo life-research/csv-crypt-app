@@ -52,10 +52,18 @@ describe('parseCsv', () => {
 });
 
 describe('readCsv', () => {
+  it('gives the offset after each record, also after CRLF', () => {
+    expect([...readCsv('a,b\r\n"x\ny"\nlast', ',')]).toEqual([
+      {fields: ['a', 'b'], end: 5},
+      {fields: ['x\ny'], end: 11},
+      {fields: ['last'], end: 15},
+    ]);
+  });
+
   it('reads the records lazily, up to an unclosed quote', () => {
     const records = readCsv('a\nb\n"c\nd', ',');
-    expect(records.next().value).toEqual(['a']);
-    expect(records.next().value).toEqual(['b']);
+    expect(records.next().value).toEqual({fields: ['a'], end: 2});
+    expect(records.next().value).toEqual({fields: ['b'], end: 4});
     expect(() => records.next()).toThrow(CsvParseError);
   });
 

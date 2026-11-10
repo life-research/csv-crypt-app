@@ -50,6 +50,9 @@ export const de = {
   'action.working': 'Bitte warten …',
   'action.reset': 'Neu beginnen',
   'action.saved': 'Gespeichert.',
+  'action.cancel': 'Abbrechen',
+  'action.cancelled': 'Abgebrochen. Die App hat keine Datei erstellt.',
+  'progress.label': 'Fortschritt',
 
   'error.line': 'Fehler in Zeile {line}: {message}',
   'error.invalid-cipher-text':

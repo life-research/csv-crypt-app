@@ -15,8 +15,14 @@ export class CsvParseError extends Error {
   }
 }
 
+/** One record and the offset in the text directly after it. */
+export interface CsvRecord {
+  fields: string[];
+  end: number;
+}
+
 export function parseCsv(text: string, separator: Separator): string[][] {
-  return Array.from(readCsv(text, separator));
+  return Array.from(readCsv(text, separator), ({fields}) => fields);
 }
 
 /**
@@ -27,7 +33,7 @@ export function parseCsv(text: string, separator: Separator): string[][] {
 export function* readCsv(
   text: string,
   separator: Separator,
-): Generator<string[]> {
+): Generator<CsvRecord> {
   let record: string[] = [];
   let field = '';
   let inQuotes = false;
@@ -66,7 +72,7 @@ export function* readCsv(
       field = '';
       i += char === '\r' ? 2 : 1;
       line++;
-      yield record;
+      yield {fields: record, end: i};
       record = [];
       recordStartLine = line;
       runStart = i;
@@ -81,7 +87,7 @@ export function* readCsv(
   field += text.slice(runStart);
   if (field !== '' || record.length > 0) {
     record.push(field);
-    yield record;
+    yield {fields: record, end: text.length};
   }
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {isCancelled} from '#lib/batches.ts';
   import {isValidHexKey} from '#lib/crypto/key.ts';
   import {
     decryptFile,
@@ -17,6 +18,7 @@
   import KeyInput from './KeyInput.svelte';
   import SeparatorSelect from './SeparatorSelect.svelte';
   import StatusMessage from './StatusMessage.svelte';
+  import WorkProgress from './WorkProgress.svelte';
 
   let file = $state<File | null>(null);
   let hexKey = $state('');
@@ -26,6 +28,10 @@
   let result = $state<FileResult | null>(null);
   let error = $state('');
   let saved = $state(false);
+  let progress = $state(0);
+  let cancelled = $state(false);
+  // Set while the work runs; `abort()` stops the work.
+  let controller: AbortController | null = null;
 
   const canStart = $derived(file !== null && !working && isValidHexKey(hexKey));
 
@@ -40,11 +46,15 @@
     }
     clearResult();
     working = true;
+    progress = 0;
+    controller = new AbortController();
     try {
       const input = new Uint8Array(await file.arrayBuffer());
       const decrypted = await decryptFile(input, hexKey, {
         separator,
         outputFormat,
+        signal: controller.signal,
+        onProgress: (fraction) => (progress = fraction),
       });
       if (decrypted.ok) {
         result = decrypted;
@@ -56,9 +66,14 @@
         );
       }
     } catch (caught) {
-      error = unexpectedErrorMessage(i18n.t, caught);
+      if (isCancelled(caught)) {
+        cancelled = true;
+      } else {
+        error = unexpectedErrorMessage(i18n.t, caught);
+      }
     } finally {
       working = false;
+      controller = null;
     }
   }
 
@@ -72,7 +87,10 @@
     }
   }
 
+  /** A change of the input also stops the work that is running. */
   function clearResult() {
+    controller?.abort();
+    cancelled = false;
     result = null;
     error = '';
     saved = false;
@@ -88,7 +106,12 @@
 </script>
 
 <div class="space-y-5">
-  <FilePicker id="decrypt-file" {file} onselect={selectFile} />
+  <FilePicker
+    id="decrypt-file"
+    {file}
+    onselect={selectFile}
+    disabled={working}
+  />
 
   <div>
     <KeyInput id="decrypt-key" bind:value={hexKey} oninput={clearResult} />
@@ -135,8 +158,16 @@
     {working ? i18n.t('action.working') : i18n.t('decrypt.start')}
   </button>
 
+  {#if working}
+    <WorkProgress fraction={progress} oncancel={() => controller?.abort()} />
+  {/if}
+
   {#if error}
     <StatusMessage kind="error" text={error} />
+  {/if}
+
+  {#if cancelled}
+    <StatusMessage kind="info" text={i18n.t('action.cancelled')} />
   {/if}
 
   {#if result}

@@ -1,4 +1,5 @@
 import {describe, expect, it, vi} from 'vitest';
+import {isCancelled} from './batches';
 import {decryptFile, encryptFile, type DecryptFileResult} from './files';
 import {encodeUtf8} from './csv/encoding';
 import {readFixture, TEST_KEY} from './test-support';
@@ -183,14 +184,29 @@ describe('large files', () => {
   });
 
   it('stops decrypting after the batch with the first bad line', async () => {
-    const pause = vi.fn(noPause);
+    const onProgress = vi.fn();
     const result = await decryptFile(encodeUtf8(rows(10)), OTHER_KEY, {
       separator: 'auto',
       outputFormat: 'utf8-comma',
       batchSize: 3,
-      pause,
+      pause: noPause,
+      onProgress,
     });
     expect(result).toMatchObject({ok: false, lineNumber: 1});
-    expect(pause).toHaveBeenCalledTimes(1);
+    expect(onProgress).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports progress and can be cancelled', async () => {
+    const controller = new AbortController();
+    const onProgress = vi.fn(() => controller.abort());
+    const work = encryptFile(encodeUtf8(rows(10)), TEST_KEY, {
+      separator: 'auto',
+      batchSize: 3,
+      pause: noPause,
+      signal: controller.signal,
+      onProgress,
+    });
+    await expect(work).rejects.toSatisfy(isCancelled);
+    expect(onProgress).toHaveBeenCalledTimes(1);
   });
 });

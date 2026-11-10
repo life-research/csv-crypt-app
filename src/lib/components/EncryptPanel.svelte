@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {isCancelled} from '#lib/batches.ts';
   import {generateHexKey, isValidHexKey} from '#lib/crypto/key.ts';
   import {
     encryptFile,
@@ -13,6 +14,7 @@
   import KeyInput from './KeyInput.svelte';
   import SeparatorSelect from './SeparatorSelect.svelte';
   import StatusMessage from './StatusMessage.svelte';
+  import WorkProgress from './WorkProgress.svelte';
 
   interface Encrypted extends FileResult {
     hexKey: string;
@@ -26,6 +28,10 @@
   let result = $state<Encrypted | null>(null);
   let error = $state('');
   let saved = $state(false);
+  let progress = $state(0);
+  let cancelled = $state(false);
+  // Set while the work runs; `abort()` stops the work.
+  let controller: AbortController | null = null;
 
   const canStart = $derived(
     file !== null && !working && (!useOwnKey || isValidHexKey(ownKey)),
@@ -42,14 +48,26 @@
     }
     clearResult();
     working = true;
+    progress = 0;
+    controller = new AbortController();
     try {
       const hexKey = useOwnKey ? ownKey.trim().toLowerCase() : generateHexKey();
       const input = new Uint8Array(await file.arrayBuffer());
-      result = {...(await encryptFile(input, hexKey, {separator})), hexKey};
+      const encrypted = await encryptFile(input, hexKey, {
+        separator,
+        signal: controller.signal,
+        onProgress: (fraction) => (progress = fraction),
+      });
+      result = {...encrypted, hexKey};
     } catch (caught) {
-      error = unexpectedErrorMessage(i18n.t, caught);
+      if (isCancelled(caught)) {
+        cancelled = true;
+      } else {
+        error = unexpectedErrorMessage(i18n.t, caught);
+      }
     } finally {
       working = false;
+      controller = null;
     }
   }
 
@@ -60,7 +78,10 @@
     }
   }
 
+  /** A change of the input also stops the work that is running. */
   function clearResult() {
+    controller?.abort();
+    cancelled = false;
     result = null;
     error = '';
     saved = false;
@@ -77,7 +98,12 @@
 </script>
 
 <div class="space-y-5">
-  <FilePicker id="encrypt-file" {file} onselect={selectFile} />
+  <FilePicker
+    id="encrypt-file"
+    {file}
+    onselect={selectFile}
+    disabled={working}
+  />
 
   <div>
     <SeparatorSelect
@@ -107,8 +133,16 @@
     {working ? i18n.t('action.working') : i18n.t('encrypt.start')}
   </button>
 
+  {#if working}
+    <WorkProgress fraction={progress} oncancel={() => controller?.abort()} />
+  {/if}
+
   {#if error}
     <StatusMessage kind="error" text={error} />
+  {/if}
+
+  {#if cancelled}
+    <StatusMessage kind="info" text={i18n.t('action.cancelled')} />
   {/if}
 
   {#if result && file}
