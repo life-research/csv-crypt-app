@@ -1,13 +1,15 @@
+import {forEachBatch, type BatchOptions} from './batches';
 import {importHexKey} from './crypto/key';
-import {decryptLine, encryptLine, type DecryptErrorCode} from './crypto/line';
-import type {RandomBytes} from './crypto/random';
-import {detectSeparator, parseCsv, writeCsv, type Separator} from './csv/csv';
 import {
-  decodeInput,
-  encodeUtf16LeWithBom,
-  encodeUtf8,
-  type InputEncoding,
-} from './csv/encoding';
+  decryptLine,
+  encryptLine,
+  type DecryptErrorCode,
+  type DecryptLineResult,
+} from './crypto/line';
+import type {RandomBytes} from './crypto/random';
+import {detectSeparator, readCsv, type Separator} from './csv/csv';
+import {decodeInput, type InputEncoding} from './csv/encoding';
+import {CsvOutput, UTF16LE_WITH_BOM, UTF8} from './csv/output';
 
 export type SeparatorChoice = Separator | 'auto';
 
@@ -17,12 +19,12 @@ export type SeparatorChoice = Separator | 'auto';
  */
 export type OutputFormat = 'excel' | 'utf8-comma';
 
-export interface EncryptOptions {
+export interface EncryptOptions extends BatchOptions {
   separator: SeparatorChoice;
   random?: RandomBytes;
 }
 
-export interface DecryptOptions {
+export interface DecryptOptions extends BatchOptions {
   separator: SeparatorChoice;
   outputFormat: OutputFormat;
 }
@@ -39,62 +41,123 @@ export interface FileResult {
   input: InputInfo;
 }
 
-interface ParsedInput {
-  records: string[][];
-  info: InputInfo;
+/** The records are read lazily, while the batches are processed. */
+interface OpenedInput {
+  records: Iterable<string[]>;
+  encoding: InputEncoding;
+  separator: Separator;
 }
 
-export type DecryptFileResult =
-  | ({ok: true} & FileResult)
-  | {ok: false; lineNumber: number; error: DecryptErrorCode};
+type DecryptFailure = {
+  ok: false;
+  lineNumber: number;
+  error: DecryptErrorCode;
+};
+
+export type DecryptFileResult = ({ok: true} & FileResult) | DecryptFailure;
 
 /** Encrypts a whole file. The output is UTF-8 with comma, like the CLI. */
 export async function encryptFile(
   input: Uint8Array,
   hexKey: string,
-  {separator, random}: EncryptOptions,
+  {separator, random, ...batchOptions}: EncryptOptions,
 ): Promise<FileResult> {
   const keys = await importHexKey(hexKey);
-  const {records, info} = readRecords(input, separator);
-  const encrypted = await Promise.all(
-    records.map((record) => encryptLine(keys, record, random)),
+  const opened = openInput(input, separator);
+  const output = new CsvOutput(',', UTF8);
+  const lineCount = await forEachBatch(
+    opened.records,
+    async (records) => {
+      output.write(
+        await Promise.all(
+          records.map((record) => encryptLine(keys, record, random)),
+        ),
+      );
+      return true;
+    },
+    batchOptions,
   );
-  return {output: encodeUtf8(writeCsv(encrypted, ',')), input: info};
+  return {output: output.finish(), input: inputInfo(opened, lineCount)};
 }
 
 /** Decrypts a whole file. Stops at the first line that cannot be decrypted. */
 export async function decryptFile(
   input: Uint8Array,
   hexKey: string,
-  {separator, outputFormat}: DecryptOptions,
+  {separator, outputFormat, ...batchOptions}: DecryptOptions,
 ): Promise<DecryptFileResult> {
   const keys = await importHexKey(hexKey);
-  const {records, info} = readRecords(input, separator);
-  const results = await Promise.all(
-    records.map((record) => decryptLine(keys, record)),
+  const opened = openInput(input, separator);
+  const output = new CsvOutput(...OUTPUT_FORMATS[outputFormat]);
+  let failure: DecryptFailure | null = null;
+  const lineCount = await forEachBatch(
+    opened.records,
+    async (records, firstIndex) => {
+      const results = await Promise.all(
+        records.map((record) => decryptLine(keys, record)),
+      );
+      const checked = checkBatch(results, firstIndex);
+      if (!checked.ok) {
+        failure = checked;
+        return false;
+      }
+      output.write(checked.records);
+      return true;
+    },
+    batchOptions,
   );
-  const decrypted: string[][] = [];
-  for (const [index, result] of results.entries()) {
-    if (!result.ok) {
-      return {ok: false, lineNumber: index + 1, error: result.error};
+  return (
+    failure ?? {
+      ok: true,
+      output: output.finish(),
+      input: inputInfo(opened, lineCount),
     }
-    decrypted.push(result.fields);
-  }
-  return {ok: true, output: writeOutput(decrypted, outputFormat), input: info};
+  );
 }
 
-function readRecords(input: Uint8Array, choice: SeparatorChoice): ParsedInput {
+const OUTPUT_FORMATS: Record<
+  OutputFormat,
+  ConstructorParameters<typeof CsvOutput>
+> = {
+  excel: ['\t', UTF16LE_WITH_BOM],
+  'utf8-comma': [',', UTF8],
+};
+
+function openInput(input: Uint8Array, choice: SeparatorChoice): OpenedInput {
   const {text, encoding} = decodeInput(input);
   const separator = choice === 'auto' ? detectSeparator(text) : choice;
-  const records = parseCsv(text, separator);
-  return {records, info: {encoding, separator, lineCount: records.length}};
+  return {
+    records: readCsv(text, separator),
+    encoding,
+    separator,
+  };
 }
 
-function writeOutput(
-  records: string[][],
-  format: OutputFormat,
-): Uint8Array<ArrayBuffer> {
-  return format === 'excel'
-    ? encodeUtf16LeWithBom(writeCsv(records, '\t'))
-    : encodeUtf8(writeCsv(records, ','));
+function inputInfo(
+  {encoding, separator}: OpenedInput,
+  lineCount: number,
+): InputInfo {
+  return {encoding, separator, lineCount};
+}
+
+/**
+ * The decrypted records of a batch, or its first failed line, numbered from 1
+ * in the whole file.
+ */
+function checkBatch(
+  results: DecryptLineResult[],
+  firstIndex: number,
+): {ok: true; records: string[][]} | DecryptFailure {
+  const records: string[][] = [];
+  for (const [index, result] of results.entries()) {
+    if (!result.ok) {
+      return {
+        ok: false,
+        lineNumber: firstIndex + index + 1,
+        error: result.error,
+      };
+    }
+    records.push(result.fields);
+  }
+  return {ok: true, records};
 }

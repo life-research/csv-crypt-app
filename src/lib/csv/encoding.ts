@@ -26,9 +26,7 @@ export function decodeInput(bytes: Uint8Array): DecodedText {
   if (startsWith(bytes, UTF16BE_BOM)) {
     return decode(bytes.subarray(UTF16BE_BOM.length), 'utf-16be');
   }
-  return isValidUtf8(bytes)
-    ? decode(bytes, 'utf-8')
-    : decode(bytes, 'windows-1252');
+  return decodeUtf8Strict(bytes) ?? decode(bytes, 'windows-1252');
 }
 
 function decode(body: Uint8Array, encoding: InputEncoding): DecodedText {
@@ -36,12 +34,13 @@ function decode(body: Uint8Array, encoding: InputEncoding): DecodedText {
   return {text, encoding};
 }
 
-function isValidUtf8(bytes: Uint8Array): boolean {
+/** Decodes only once: the check for valid UTF-8 also gives the text. */
+function decodeUtf8Strict(bytes: Uint8Array): DecodedText | null {
   try {
-    new TextDecoder('utf-8', {fatal: true}).decode(bytes);
-    return true;
+    const decoder = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true});
+    return {text: decoder.decode(bytes), encoding: 'utf-8'};
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -55,11 +54,18 @@ export function encodeUtf8(text: string): Uint8Array<ArrayBuffer> {
 
 /** UTF-16LE with BOM, like `--out-optimize-win` (opens correctly in Excel). */
 export function encodeUtf16LeWithBom(text: string): Uint8Array<ArrayBuffer> {
-  const bytes = new Uint8Array(2 + text.length * 2);
-  const view = new DataView(bytes.buffer);
+  const bytes = new Uint8Array(UTF16LE_BOM.length + text.length * 2);
   bytes.set(UTF16LE_BOM);
+  bytes.set(encodeUtf16Le(text), UTF16LE_BOM.length);
+  return bytes;
+}
+
+/** UTF-16LE without BOM, for the parts of a file after the first one. */
+export function encodeUtf16Le(text: string): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(text.length * 2);
+  const view = new DataView(bytes.buffer);
   for (let i = 0; i < text.length; i++) {
-    view.setUint16(2 + i * 2, text.charCodeAt(i), true);
+    view.setUint16(i * 2, text.charCodeAt(i), true);
   }
   return bytes;
 }

@@ -1,5 +1,11 @@
 import {describe, expect, it} from 'vitest';
-import {CsvParseError, detectSeparator, parseCsv, writeCsv} from './csv';
+import {
+  CsvParseError,
+  detectSeparator,
+  parseCsv,
+  readCsv,
+  writeCsv,
+} from './csv';
 
 describe('parseCsv', () => {
   it('reads simple records', () => {
@@ -42,6 +48,23 @@ describe('parseCsv', () => {
     } catch (error) {
       expect((error as CsvParseError).lineNumber).toBe(3);
     }
+  });
+});
+
+describe('readCsv', () => {
+  it('reads the records lazily, up to an unclosed quote', () => {
+    const records = readCsv('a\nb\n"c\nd', ',');
+    expect(records.next().value).toEqual(['a']);
+    expect(records.next().value).toEqual(['b']);
+    expect(() => records.next()).toThrow(CsvParseError);
+  });
+
+  it('joins quoted and plain parts of one field', () => {
+    expect(parseCsv('ab"c,d"ef,g\n', ',')).toEqual([['abc,def', 'g']]);
+  });
+
+  it('keeps a single CR inside a field', () => {
+    expect(parseCsv('a\rb,c\n', ',')).toEqual([['a\rb', 'c']]);
   });
 });
 
