@@ -338,8 +338,9 @@ executable has no code signature yet.
 
 ### Roles
 
-The project has two maintainers. They are the members of the GitHub team
-<!-- TODO: link to the maintainer team -->.
+The project has two maintainers:
+[@MischaRo](https://github.com/MischaRo) and
+[@knoppix](https://github.com/knoppix).
 
 - **Committers:** the maintainers. They write the changes.
 - **Reviewers:** the maintainers. Each change needs the approval of the
