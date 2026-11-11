@@ -60,5 +60,11 @@ export const en: Messages = {
   'error.wrong-key-or-corrupt':
     'The key is wrong, or somebody changed the file.',
   'error.unclosedQuote': 'A quote (") from line {line} is not closed.',
+  'error.fileTooLarge':
+    'The file is too large ({size} MB). The app processes files up to {max} MB. Please split the file into smaller files.',
+  'error.outputTooLarge':
+    'The encrypted file would be larger than {max} MB. The app could not decrypt it again. Please split the file into smaller files.',
+  'error.textTooLong':
+    'The browser cannot read the text of this file because it is too large. Please split the file into smaller files.',
   'error.unexpected': 'Unexpected error: {message}',
 };

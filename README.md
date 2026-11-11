@@ -8,6 +8,29 @@ are encrypted into column 2. The file format is identical to the CLI
 All encryption runs in the browser (Web Crypto API). The data never leaves
 the computer. A Content Security Policy blocks all network requests.
 
+## File size
+
+The app encrypts CSV files up to 200 MB and decrypts files up to 500 MB.
+For larger files, it shows a message (`src/lib/limits.ts`). Split such
+files into smaller files.
+
+An encrypted file is larger than the original: approx. 1.5 to 2.5 times
+for typical tables, more for tables with very short rows. If the encrypted
+file would be larger than 500 MB, the app stops, because it could not
+decrypt the file again.
+
+Measured in Chrome 157 (headless, Linux, 30 GB RAM), with 7 short columns
+per row:
+
+| Input  | Rows        | Encrypt          | Decrypt          |
+| ------ | ----------- | ---------------- | ---------------- |
+| 150 MB | approx. 3 M | 87 s, 1.8 GB RAM | 70 s, 2.2 GB RAM |
+| 200 MB | approx. 4 M | 117 s, 2.2 GB    | 95 s, 2.7 GB     |
+
+Computers with less RAM (e.g. 8 GB) and the desktop app (WebView2 on
+Windows) are not measured yet. On such computers, large files can fail
+earlier.
+
 ## Builds
 
 | Build | Command                 | Output                        | Use                         |

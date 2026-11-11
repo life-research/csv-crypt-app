@@ -29,19 +29,44 @@ export function decodeInput(bytes: Uint8Array): DecodedText {
   return decodeUtf8Strict(bytes) ?? decode(bytes, 'windows-1252');
 }
 
+/** The browser could not turn the bytes into one text (too long). */
+export class TextTooLongError extends Error {
+  constructor() {
+    super('The browser could not decode the file into one text.');
+    this.name = 'TextTooLongError';
+  }
+}
+
 function decode(body: Uint8Array, encoding: InputEncoding): DecodedText {
-  const text = new TextDecoder(encoding, {ignoreBOM: true}).decode(body);
-  return {text, encoding};
+  const decoder = new TextDecoder(encoding, {ignoreBOM: true});
+  return {text: checkedDecode(decoder, body), encoding};
 }
 
 /** Decodes only once: the check for valid UTF-8 also gives the text. */
 function decodeUtf8Strict(bytes: Uint8Array): DecodedText | null {
+  const decoder = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true});
+  let text: string;
   try {
-    const decoder = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true});
-    return {text: decoder.decode(bytes), encoding: 'utf-8'};
+    text = decoder.decode(bytes);
   } catch {
     return null;
   }
+  return {text: checkedTextLength(text, bytes), encoding: 'utf-8'};
+}
+
+function checkedDecode(decoder: TextDecoder, body: Uint8Array): string {
+  return checkedTextLength(decoder.decode(body), body);
+}
+
+/**
+ * Chrome gives an empty text, without an error, for more than 536,870,888
+ * characters. Bytes always give at least one character.
+ */
+function checkedTextLength(text: string, body: Uint8Array): string {
+  if (text.length === 0 && body.length > 0) {
+    throw new TextTooLongError();
+  }
+  return text;
 }
 
 function startsWith(bytes: Uint8Array, prefix: number[]): boolean {

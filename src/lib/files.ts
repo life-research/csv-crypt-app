@@ -15,6 +15,11 @@ import {
 } from './csv/csv';
 import {decodeInput, type InputEncoding} from './csv/encoding';
 import {CsvOutput, UTF16LE_WITH_BOM, UTF8} from './csv/output';
+import {
+  assertInputSize,
+  MAX_ENCRYPT_OUTPUT_BYTES,
+  type Operation,
+} from './limits';
 
 export type SeparatorChoice = Separator | 'auto';
 
@@ -69,8 +74,8 @@ export async function encryptFile(
   {separator, random, ...batchOptions}: EncryptOptions,
 ): Promise<FileResult> {
   const keys = await importHexKey(hexKey);
-  const opened = openInput(input, separator);
-  const output = new CsvOutput(',', UTF8);
+  const opened = openInput(input, separator, 'encrypt');
+  const output = new CsvOutput(',', UTF8, MAX_ENCRYPT_OUTPUT_BYTES);
   const lineCount = await forEachBatch(
     opened.records,
     opened.textLength,
@@ -94,7 +99,7 @@ export async function decryptFile(
   {separator, outputFormat, ...batchOptions}: DecryptOptions,
 ): Promise<DecryptFileResult> {
   const keys = await importHexKey(hexKey);
-  const opened = openInput(input, separator);
+  const opened = openInput(input, separator, 'decrypt');
   const output = new CsvOutput(...OUTPUT_FORMATS[outputFormat]);
   let failure: DecryptFailure | null = null;
   const lineCount = await forEachBatch(
@@ -131,7 +136,12 @@ const OUTPUT_FORMATS: Record<
   'utf8-comma': [',', UTF8],
 };
 
-function openInput(input: Uint8Array, choice: SeparatorChoice): OpenedInput {
+function openInput(
+  input: Uint8Array,
+  choice: SeparatorChoice,
+  operation: Operation,
+): OpenedInput {
+  assertInputSize(input.length, operation);
   const {text, encoding} = decodeInput(input);
   const separator = choice === 'auto' ? detectSeparator(text) : choice;
   return {

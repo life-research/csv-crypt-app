@@ -1,9 +1,10 @@
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   decodeInput,
   encodeUtf16Le,
   encodeUtf16LeWithBom,
   encodeUtf8,
+  TextTooLongError,
 } from './encoding';
 
 const bytes = (...values: number[]) => Uint8Array.from(values);
@@ -65,5 +66,27 @@ describe('encodeUtf16Le', () => {
 
   it('gives an empty array for an empty text', () => {
     expect(encodeUtf16Le('')).toHaveLength(0);
+  });
+});
+
+describe('decodeInput with a text that is too long for the browser', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Chrome gives an empty text, without an error, for more than 536,870,888
+  // characters. The test simulates this; the real case needs > 512 MB.
+  it.each([
+    ['UTF-8', [0x61]],
+    ['Windows-1252', [0xe4]],
+    ['UTF-16LE with BOM', [0xff, 0xfe, 0x61, 0x00]],
+  ])('throws instead of an empty text (%s)', (_, values) => {
+    vi.spyOn(TextDecoder.prototype, 'decode').mockReturnValue('');
+    expect(() => decodeInput(bytes(...values))).toThrow(TextTooLongError);
+  });
+
+  it('accepts an empty file and a file with only a BOM', () => {
+    expect(decodeInput(bytes()).text).toBe('');
+    expect(decodeInput(bytes(0xef, 0xbb, 0xbf)).text).toBe('');
   });
 });

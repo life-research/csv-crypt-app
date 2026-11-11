@@ -7,6 +7,7 @@
     type SeparatorChoice,
   } from '#lib/files.ts';
   import {i18n} from '#lib/i18n/i18n.svelte.ts';
+  import {assertInputSize} from '#lib/limits.ts';
   import {inputSummary, unexpectedErrorMessage} from '#lib/messages.ts';
   import {outputFileName, saveFile} from '#lib/save.ts';
   import FilePicker from './FilePicker.svelte';
@@ -52,6 +53,8 @@
     controller = new AbortController();
     try {
       const hexKey = useOwnKey ? ownKey.trim().toLowerCase() : generateHexKey();
+      // Before reading: a file that is too large can slow down the browser.
+      assertInputSize(file.size, 'encrypt');
       const input = new Uint8Array(await file.arrayBuffer());
       const encrypted = await encryptFile(input, hexKey, {
         separator,
