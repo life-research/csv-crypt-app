@@ -21,7 +21,9 @@ async function saveDownload(page: Page, buttonName: string): Promise<string> {
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', {name: buttonName}).click();
   const download = await downloadPromise;
-  const path = await download.path();
+  // Keeps the suggested name: the app accepts only .csv and .txt files.
+  const path = test.info().outputPath(download.suggestedFilename());
+  await download.saveAs(path);
   return path;
 }
 
@@ -136,4 +138,45 @@ test('locks the file, shows the progress and cancels a large file', async ({
   await expect(page.getByRole('progressbar')).toBeHidden();
   await expect(page.getByText('Die Datei ist verschlüsselt.')).toBeHidden();
   await expect(page.locator('#encrypt-file')).toBeEnabled();
+});
+
+test('rejects a file with a wrong extension and keeps the previous file', async ({
+  page,
+}) => {
+  await page.locator('#encrypt-file').setInputFiles(CLEAR_FILE);
+  await page.locator('#encrypt-file').setInputFiles({
+    name: 'bericht.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.7'),
+  });
+
+  await expect(page.getByRole('alert')).toContainText(
+    'Die App kann die Datei „bericht.pdf“ nicht verarbeiten.',
+  );
+  await expect(
+    page.getByText('Ausgewählt: example-comma-utf8.csv'),
+  ).toBeVisible();
+});
+
+test('does not encrypt an Excel file with the extension .csv', async ({
+  page,
+}) => {
+  const xlsx = Buffer.concat([
+    Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    Buffer.from('[Content_Types].xml xl/workbook.xml'),
+  ]);
+  await page.locator('#encrypt-file').setInputFiles({
+    name: 'studie.csv',
+    mimeType: 'text/csv',
+    buffer: xlsx,
+  });
+  await page
+    .getByRole('button', {name: 'Verschlüsseln', exact: true})
+    .last()
+    .click();
+
+  await expect(page.getByRole('alert')).toContainText(
+    'Die Datei ist eine Excel-Datei, keine CSV-Datei.',
+  );
+  await expect(page.getByText('Die Datei ist verschlüsselt.')).toBeHidden();
 });

@@ -2,6 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {isCancelled} from './batches';
 import {FileTooLargeError, MAX_ENCRYPT_INPUT_BYTES} from './limits';
 import {decryptFile, encryptFile, type DecryptFileResult} from './files';
+import {NotTextFileError} from './csv/content';
 import {encodeUtf8} from './csv/encoding';
 import {readFixture, TEST_KEY} from './test-support';
 
@@ -218,5 +219,30 @@ describe('size limits', () => {
     await expect(
       encryptFile(input, TEST_KEY, {separator: 'auto'}),
     ).rejects.toThrow(FileTooLargeError);
+  });
+});
+
+describe('files that are not text', () => {
+  const xlsxRenamedToCsv = Uint8Array.from([
+    0x50,
+    0x4b,
+    0x03,
+    0x04,
+    ...encodeUtf8('[Content_Types].xml xl/workbook.xml'),
+  ]);
+
+  it('does not encrypt an Excel file', async () => {
+    await expect(
+      encryptFile(xlsxRenamedToCsv, TEST_KEY, {separator: 'auto'}),
+    ).rejects.toThrow(expect.objectContaining({kind: 'excel'}));
+  });
+
+  it('does not decrypt binary data', async () => {
+    await expect(
+      decryptFile(Uint8Array.of(1, 2, 0, 3), TEST_KEY, {
+        separator: 'auto',
+        outputFormat: 'utf8-comma',
+      }),
+    ).rejects.toThrow(NotTextFileError);
   });
 });

@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {NotTextFileError} from './csv/content';
 import {CsvParseError} from './csv/csv';
 import {TextTooLongError} from './csv/encoding';
 import {FileTooLargeError, MIB, OutputTooLargeError} from './limits';
@@ -7,6 +8,7 @@ import {format, type MessageKey, type Params} from './i18n/i18n';
 import {
   decryptErrorMessage,
   inputSummary,
+  rejectedFileMessage,
   unexpectedErrorMessage,
 } from './messages';
 
@@ -42,6 +44,31 @@ describe('messages', () => {
   it('describes a text that the browser cannot read', () => {
     expect(unexpectedErrorMessage(t, new TextTooLongError())).toBe(
       de['error.textTooLong'],
+    );
+  });
+
+  it('describes a file that is not text', () => {
+    expect(unexpectedErrorMessage(t, new NotTextFileError('excel'))).toBe(
+      de['error.notText.excel'],
+    );
+    expect(unexpectedErrorMessage(t, new NotTextFileError('binary'))).toBe(
+      de['error.notText.binary'],
+    );
+  });
+
+  it('accepts supported file names', () => {
+    expect(rejectedFileMessage(t, 'daten.csv')).toBeNull();
+  });
+
+  it('names the allowed extensions for an unsupported file', () => {
+    expect(rejectedFileMessage(t, 'bericht.pdf')).toBe(
+      'Die App kann die Datei „bericht.pdf“ nicht verarbeiten. Erlaubt sind CSV- und Textdateien (.csv, .txt).',
+    );
+  });
+
+  it('tells how to save an Excel file as CSV', () => {
+    expect(rejectedFileMessage(t, 'studie.xlsx')).toContain(
+      '„studie.xlsx“ in Excel',
     );
   });
 

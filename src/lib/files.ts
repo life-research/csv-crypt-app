@@ -7,6 +7,7 @@ import {
   type DecryptLineResult,
 } from './crypto/line';
 import type {RandomBytes} from './crypto/random';
+import {assertTextContent} from './csv/content';
 import {
   detectSeparator,
   readCsv,
@@ -143,6 +144,7 @@ function openInput(
 ): OpenedInput {
   assertInputSize(input.length, operation);
   const {text, encoding} = decodeInput(input);
+  assertTextContent(input, text);
   const separator = choice === 'auto' ? detectSeparator(text) : choice;
   return {
     records: readCsv(text, separator),

@@ -5,6 +5,11 @@ encrypts a CSV file line by line: column 1 stays readable, all other columns
 are encrypted into column 2. The file format is identical to the CLI
 (v0.5), so both tools can read each other's files.
 
+The app takes only files with the extension `.csv` or `.txt` (Excel's
+"Unicode Text"). It also checks the content: Excel files, other Office
+files, PDFs, images, archives and other binary files get a message and are
+not processed, also when they have a `.csv` name.
+
 All encryption runs in the browser (Web Crypto API). The data never leaves
 the computer. A Content Security Policy blocks all network requests.
 

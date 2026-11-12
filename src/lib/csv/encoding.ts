@@ -69,7 +69,7 @@ function checkedTextLength(text: string, body: Uint8Array): string {
   return text;
 }
 
-function startsWith(bytes: Uint8Array, prefix: number[]): boolean {
+export function startsWith(bytes: Uint8Array, prefix: number[]): boolean {
   return prefix.every((byte, i) => bytes[i] === byte);
 }
 
