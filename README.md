@@ -53,7 +53,10 @@ If there is no **Run anyway** button, see
 
 ## Usage
 
-### Encrypt a file
+This section gives a short overview. For step-by-step instructions, download
+the [manual (PDF, 1.2 MB)](docs/manual/CSV_Crypt_App_Manual.pdf).
+
+### Encrypt a CSV-file
 
 1. In the tab **Encrypt**, select the file. Drop it on the field or click
    the field.
@@ -70,7 +73,7 @@ Without the key, nobody can decrypt the file.
        width="400">
 </p>
 
-### Decrypt a file
+### Decrypt a CSV-file
 
 1. In the tab **Decrypt**, select the encrypted file.
 2. Enter the key (64 characters).
