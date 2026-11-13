@@ -4,6 +4,6 @@
     "sourceMap": true,
     "strict": true
   },
-  "include": ["src", "test", "e2e", "*"],
+  "include": ["src", "test", "e2e", "e2e-desktop", "*"],
   "exclude": ["src/service-worker"]
 }

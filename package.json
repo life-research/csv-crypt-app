@@ -27,6 +27,7 @@
     "fixtures": "sh scripts/make-fixtures.sh",
     "cross-check": "sh scripts/cross-check.sh",
     "test:e2e": "npm run build && npm run build:single && playwright test",
+    "test:e2e:desktop": "playwright test --config playwright.desktop.config.ts",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build:windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --bundles nsis",

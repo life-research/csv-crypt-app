@@ -78,6 +78,42 @@ jobs:
           -Version $env:VERSION
           -ScreenshotPath screenshots/app-start.png
 
+      # A second executable with the feature e2e: only it opens the CDP port
+      # for Playwright (src-tauri/src/e2e.rs). Its own target folder keeps
+      # the release executable unchanged.
+      - name: Build test executable
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}\target-e2e
+        run: npx tauri build --no-bundle --features e2e -- --locked
+
+      # The "Save as" dialog hides known extensions by default. The test keeps
+      # the suggested file name, so it must see the extension
+      # (e2e-desktop/save-dialog.ps1).
+      - name: Show file name extensions
+        shell: pwsh
+        run: >-
+          Set-ItemProperty
+          -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+          -Name HideFileExt -Value 0 -Type DWord
+
+      # Encrypts and decrypts a file through the UI of the test executable
+      # and its native "Save as" dialog (e2e-desktop/).
+      - name: Test executable end to end
+        env:
+          CSV_CRYPT_EXE: ${{ runner.temp }}\target-e2e\release\csv-crypt.exe
+        run: npm run test:e2e:desktop
+
+      - name: Upload end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-e2e-report
+          path: |
+            playwright-report/
+            test-results/desktop/
+          if-no-files-found: ignore
+          retention-days: 7
+
       # Shows what the app looked like on the runner, also when the test failed.
       - name: Upload screenshot
         if: always()
