@@ -5,18 +5,21 @@ import {readCsv} from './csv/csv';
 const TEXT = 'a\nb\nc\nd\ne\n';
 const noPause = () => Promise.resolve();
 
-/** Collects the batches that the handler gets. */
+/** Collects the fields and start lines of the batches that the handler gets. */
 function recorder(stopAfter = Infinity) {
-  const batches: {records: string[][]; firstIndex: number}[] = [];
-  const handle: BatchHandler = async (records, firstIndex) => {
-    batches.push({records, firstIndex});
+  const batches: {fields: string[][]; lines: number[]}[] = [];
+  const handle: BatchHandler = async (records) => {
+    batches.push({
+      fields: records.map(({fields}) => fields),
+      lines: records.map(({line}) => line),
+    });
     return batches.length < stopAfter;
   };
   return {batches, handle};
 }
 
 describe('forEachBatch', () => {
-  it('gives the records in batches with the index of the first record', async () => {
+  it('gives the records in batches with their start lines', async () => {
     const {batches, handle} = recorder();
     const count = await forEachBatch(readCsv(TEXT, ','), TEXT.length, handle, {
       batchSize: 2,
@@ -24,9 +27,9 @@ describe('forEachBatch', () => {
     });
     expect(count).toBe(5);
     expect(batches).toEqual([
-      {records: [['a'], ['b']], firstIndex: 0},
-      {records: [['c'], ['d']], firstIndex: 2},
-      {records: [['e']], firstIndex: 4},
+      {fields: [['a'], ['b']], lines: [1, 2]},
+      {fields: [['c'], ['d']], lines: [3, 4]},
+      {fields: [['e']], lines: [5]},
     ]);
   });
 
@@ -63,9 +66,9 @@ describe('forEachBatch', () => {
   it('reads no more records than the batches need', async () => {
     const read: string[] = [];
     function* records() {
-      for (const {fields, end} of readCsv(TEXT, ',')) {
-        read.push(fields[0]);
-        yield {fields, end};
+      for (const record of readCsv(TEXT, ',')) {
+        read.push(record.fields[0]);
+        yield record;
       }
     }
     await forEachBatch(records(), TEXT.length, recorder(1).handle, {

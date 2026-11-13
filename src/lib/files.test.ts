@@ -246,3 +246,27 @@ describe('files that are not text', () => {
     ).rejects.toThrow(NotTextFileError);
   });
 });
+
+describe('line numbers in decryption errors', () => {
+  it('reports the line in the file, also after fields with line ends', async () => {
+    const clear = 'id,note\n"P1\nP1b",a\n"P2\nP2b\nP2c",b\nP3,c\n';
+    const encrypted = await encryptFile(encodeUtf8(clear), TEST_KEY, {
+      separator: 'auto',
+    });
+    const text = new TextDecoder().decode(encrypted.output);
+    // Record 4 (P3) starts on line 7 of the encrypted file.
+    const broken = text.replace(/^P3,.*$/m, 'P3,broken');
+    expect(broken).not.toBe(text);
+
+    const result = await decryptFile(encodeUtf8(broken), TEST_KEY, {
+      separator: 'auto',
+      outputFormat: 'utf8-comma',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      lineNumber: 7,
+      error: 'invalid-cipher-text',
+    });
+  });
+});

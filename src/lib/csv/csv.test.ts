@@ -54,17 +54,28 @@ describe('parseCsv', () => {
 describe('readCsv', () => {
   it('gives the offset after each record, also after CRLF', () => {
     expect([...readCsv('a,b\r\n"x\ny"\nlast', ',')]).toEqual([
-      {fields: ['a', 'b'], end: 5},
-      {fields: ['x\ny'], end: 11},
-      {fields: ['last'], end: 15},
+      {fields: ['a', 'b'], line: 1, end: 5},
+      {fields: ['x\ny'], line: 2, end: 11},
+      {fields: ['last'], line: 4, end: 15},
     ]);
   });
 
   it('reads the records lazily, up to an unclosed quote', () => {
     const records = readCsv('a\nb\n"c\nd', ',');
-    expect(records.next().value).toEqual({fields: ['a'], end: 2});
-    expect(records.next().value).toEqual({fields: ['b'], end: 4});
+    expect(records.next().value).toEqual({fields: ['a'], line: 1, end: 2});
+    expect(records.next().value).toEqual({fields: ['b'], line: 2, end: 4});
     expect(() => records.next()).toThrow(CsvParseError);
+  });
+
+  it('counts the line ends inside quoted fields for the start line', () => {
+    const text = 'id,note\n1,"two\nlines"\n2,"three\r\nline\nend"\n3,x\n';
+    expect([...readCsv(text, ',')].map(({line}) => line)).toEqual([1, 2, 4, 7]);
+  });
+
+  it('counts empty lines and CRLF for the start line', () => {
+    expect([...readCsv('a\r\n\r\nb\r\n', ',')].map(({line}) => line)).toEqual([
+      1, 2, 3,
+    ]);
   });
 
   it('joins quoted and plain parts of one field', () => {

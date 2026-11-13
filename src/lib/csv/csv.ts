@@ -15,9 +15,14 @@ export class CsvParseError extends Error {
   }
 }
 
-/** One record and the offset in the text directly after it. */
+/**
+ * One record, the line in the file on which it starts (from 1), and the
+ * offset in the text directly after it. A quoted field can contain line
+ * ends, so a record can span several lines.
+ */
 export interface CsvRecord {
   fields: string[];
+  line: number;
   end: number;
 }
 
@@ -72,7 +77,7 @@ export function* readCsv(
       field = '';
       i += char === '\r' ? 2 : 1;
       line++;
-      yield {fields: record, end: i};
+      yield {fields: record, line: recordStartLine, end: i};
       record = [];
       recordStartLine = line;
       runStart = i;
@@ -87,7 +92,7 @@ export function* readCsv(
   field += text.slice(runStart);
   if (field !== '' || record.length > 0) {
     record.push(field);
-    yield {fields: record, end: text.length};
+    yield {fields: record, line: recordStartLine, end: text.length};
   }
 }
 
