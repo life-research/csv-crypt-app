@@ -138,8 +138,10 @@ Get-FileHash .\csv-crypt-X.Y.Z-windows-x64.exe -Algorithm SHA256
 Get-Content .\csv-crypt-X.Y.Z-windows-x64.exe.sha256
 ```
 
-The two values must be the same (PowerShell shows the checksum in capital
-letters). On Linux or macOS:
+The two values must be equal (PowerShell shows the checksum in capital
+letters).
+
+On Linux or macOS:
 
 ```sh
 sha256sum -c csv-crypt-X.Y.Z-windows-x64.exe.sha256
@@ -342,8 +344,8 @@ executable has no code signature yet.
 ### Roles
 
 The project has two maintainers:
-[@MischaRo](https://github.com/MischaRo) and
-[@knoppix](https://github.com/knoppix).
+[Michael Rojkov](https://github.com/MischaRo) and
+[Jonas Wagner](https://github.com/knoppiks).
 
 - **Committers:** the maintainers. They write the changes.
 - **Reviewers:** the maintainers. Each change needs the approval of the
