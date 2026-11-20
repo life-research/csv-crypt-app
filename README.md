@@ -17,7 +17,11 @@ the computer. A Content Security Policy blocks all network requests.
 
 Download the executable of the application for your OS (At the moment, there is only a version for Windows:)
 
-- [Windows](https://github.com/life-research/csv-crypt-app/releases/latest)
+- [Windows](https://github.com/life-research/csv-crypt-app/releases/latest/download/csv-crypt-windows-x64.exe)
+
+The link always downloads the newest version. Older versions, checksums
+and the provenance are on the
+[release page](https://github.com/life-research/csv-crypt-app/releases).
 
 The executable needs no installation. Save it and start it with a double
 click.
@@ -128,8 +132,16 @@ code signature, there is no other solution.
 
 ### Verify the download
 
-Each release contains a checksum file (`.sha256`). Compare it with the
-checksum of your download.
+Each release contains the executable under two names with the same
+content:
+
+- `csv-crypt-X.Y.Z-windows-x64.exe`: the name contains the version.
+- `csv-crypt-windows-x64.exe`: the name is the same in each release. The
+  download link in [Install](#install) uses it.
+
+Each of the two files has its own checksum file (`.sha256`). Compare it
+with the checksum of your download. The examples use the name with the
+version. For the other name, remove `X.Y.Z-` from the file names.
 
 In PowerShell:
 

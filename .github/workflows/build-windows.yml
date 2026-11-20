@@ -124,32 +124,22 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # Only a tag build has the plain name of an official release, plus the
+      # fixed name for the README link releases/latest/download/...
+      # Other builds name the commit they were built from.
       - name: Name executable and write checksum
         id: artifact
-        shell: pwsh
+        shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Only a tag build has the plain name of an official release.
-          # Other builds name the commit they were built from.
-          $version = $env:VERSION
-          if ($env:GITHUB_REF_TYPE -ne 'tag') {
-            $version += "-dev.$(git rev-parse --short=7 HEAD)"
-          }
-          $name = "csv-crypt-$version-windows-x64"
-          $exe = "$name.exe"
-          New-Item -ItemType Directory -Path dist | Out-Null
-          Copy-Item src-tauri/target/release/csv-crypt.exe "dist/$exe"
-          $hash = (Get-FileHash "dist/$exe" -Algorithm SHA256).Hash.ToLower()
-          # LF line ending, so that `sha256sum -c` also works on Linux.
-          $checksumLine = "$hash  $exe`n"
-          [IO.File]::WriteAllText("$PWD/dist/$exe.sha256", $checksumLine)
-          Write-Host "$exe SHA-256: $hash"
-          "name=$name" >> $env:GITHUB_OUTPUT
-          "version=$version" >> $env:GITHUB_OUTPUT
-          # The SLSA generator takes the sha256sum output, base64 encoded.
-          $subject = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($checksumLine))
-          "subject-b64=$subject" >> $env:GITHUB_OUTPUT
+          commit=''
+          if [ "${GITHUB_REF_TYPE}" != 'tag' ]; then
+            commit="$(git rev-parse --short=7 HEAD)"
+          fi
+          node scripts/prepare-release-files.js \
+            src-tauri/target/release/csv-crypt.exe dist "${VERSION}" ${commit:+"${commit}"} \
+            >>"${GITHUB_OUTPUT}"
 
       - name: Install SBOM tools
         uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
